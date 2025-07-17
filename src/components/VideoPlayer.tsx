@@ -9,6 +9,7 @@ interface VideoPlayerProps {
   onPlaylistComplete: () => void;
   initialIndex?: number;
   isAudioMode?: boolean; // 新增：是否为音频模式
+  validateAndFixVideoUrl?: (videoId: string) => Promise<string | null>; // 新增：修复视频URL的方法
 }
 
 export const VideoPlayer: React.FC<VideoPlayerProps> = ({
@@ -18,6 +19,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   onPlaylistComplete,
   initialIndex = 0,
   isAudioMode = false,
+  validateAndFixVideoUrl,
 }) => {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -210,8 +212,27 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         }
       };
 
-      const handleError = (e: any) => {
+      const handleError = async (e: any) => {
         console.error('Video error:', e);
+        
+        // 如果有validateAndFixVideoUrl方法，尝试修复视频URL
+        if (validateAndFixVideoUrl && currentVideo && retryCount < 3) {
+          console.log('Attempting to fix video URL for:', currentVideo.id);
+          setRetryCount(prev => prev + 1);
+          
+          try {
+            const fixedUrl = await validateAndFixVideoUrl(currentVideo.id);
+            if (fixedUrl && fixedUrl !== currentVideo.fileUrl) {
+              console.log('Video URL fixed, retrying with:', fixedUrl);
+              video.src = fixedUrl;
+              video.load();
+              return; // 不设置错误状态，让视频重新加载
+            }
+          } catch (error) {
+            console.error('Error fixing video URL:', error);
+          }
+        }
+        
         setVideoError(true);
         setIsLoading(false);
       };

@@ -101,10 +101,24 @@ class FileStorageManager {
     }
     
     return new Promise((resolve, reject) => {
+      // 检查文件是否有效
+      if (!file || file.size === 0) {
+        console.error('Invalid file:', file);
+        reject(new Error('Invalid file'));
+        return;
+      }
+      
       // 将文件转换为 ArrayBuffer 存储
       const reader = new FileReader();
       reader.onload = () => {
-        console.log('FileReader onload, data length:', (reader.result as ArrayBuffer).byteLength);
+        const arrayBuffer = reader.result as ArrayBuffer;
+        console.log('FileReader onload, data length:', arrayBuffer.byteLength);
+        
+        if (arrayBuffer.byteLength === 0) {
+          console.error('Empty file content');
+          reject(new Error('Empty file content'));
+          return;
+        }
         
         try {
           // Move transaction creation inside the callback to ensure it's active
@@ -116,30 +130,70 @@ class FileStorageManager {
             name: file.name,
             type: file.type,
             size: file.size,
-            data: reader.result as ArrayBuffer,
+            data: arrayBuffer,
             timestamp: Date.now()
           };
           
           console.log('Storing file data:', { id, name: fileData.name, size: fileData.size, type: fileData.type });
           
           const request = store.put(fileData);
+          
           request.onsuccess = () => {
             console.log('File stored successfully in IndexedDB');
-            // 创建临时 URL
-            const blob = new Blob([reader.result as ArrayBuffer], { type: file.type });
-            const url = URL.createObjectURL(blob);
-            console.log('Created blob URL:', url);
-            resolve(url);
+            try {
+              // 创建临时 URL
+              const blob = new Blob([arrayBuffer], { type: file.type });
+              const url = URL.createObjectURL(blob);
+              console.log('Created blob URL:', url);
+              
+              // Android设备特殊处理：验证URL是否有效
+              if (/Android/i.test(navigator.userAgent)) {
+                console.log('Android device detected, validating blob URL...');
+                // 通过创建临时video元素验证URL
+                const testVideo = document.createElement('video');
+                testVideo.src = url;
+                testVideo.onloadedmetadata = () => {
+                  console.log('Android: Blob URL validated successfully');
+                  resolve(url);
+                };
+                testVideo.onerror = () => {
+                  console.error('Android: Blob URL validation failed');
+                  URL.revokeObjectURL(url);
+                  reject(new Error('Android: Blob URL validation failed'));
+                };
+                // 设置超时，防止无限等待
+                setTimeout(() => {
+                  testVideo.onerror = null;
+                  testVideo.onloadedmetadata = null;
+                  if (testVideo.readyState === 0) {
+                    console.warn('Android: Blob URL validation timeout, proceeding anyway');
+                    resolve(url);
+                  }
+                }, 3000);
+              } else {
+                resolve(url);
+              }
+            } catch (error) {
+              console.error('Error creating blob URL:', error);
+              reject(error);
+            }
           };
+          
           request.onerror = () => {
             console.error('IndexedDB put error:', request.error);
             reject(request.error);
+          };
+          
+          transaction.onerror = () => {
+            console.error('IndexedDB transaction error:', transaction.error);
+            reject(transaction.error);
           };
         } catch (error) {
           console.error('Transaction error:', error);
           reject(error);
         }
       };
+      
       reader.onerror = () => {
         console.error('FileReader error:', reader.error);
         reject(reader.error);
@@ -151,7 +205,12 @@ class FileStorageManager {
   }
 
   async getFile(id: string): Promise<string | null> {
-    if (!this.db) await this.init();
+    console.log('getFile called with id:', id);
+    
+    if (!this.db) {
+      console.log('Database not initialized, initializing...');
+      await this.init();
+    }
     
     return new Promise((resolve, reject) => {
       const transaction = this.db!.transaction(['files'], 'readonly');
@@ -160,14 +219,31 @@ class FileStorageManager {
       
       request.onsuccess = () => {
         if (request.result) {
-          const blob = new Blob([request.result.data], { type: request.result.type });
-          const url = URL.createObjectURL(blob);
-          resolve(url);
+          console.log('File found in IndexedDB:', { id, name: request.result.name, size: request.result.size });
+          try {
+            const blob = new Blob([request.result.data], { type: request.result.type });
+            const url = URL.createObjectURL(blob);
+            console.log('Created blob URL:', url);
+            resolve(url);
+          } catch (error) {
+            console.error('Error creating blob URL:', error);
+            resolve(null);
+          }
         } else {
+          console.warn('File not found in IndexedDB:', id);
           resolve(null);
         }
       };
-      request.onerror = () => reject(request.error);
+      
+      request.onerror = () => {
+        console.error('IndexedDB get error:', request.error);
+        reject(request.error);
+      };
+      
+      transaction.onerror = () => {
+        console.error('IndexedDB transaction error:', transaction.error);
+        reject(transaction.error);
+      };
     });
   }
 

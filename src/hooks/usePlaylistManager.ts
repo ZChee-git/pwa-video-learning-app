@@ -52,9 +52,15 @@ export const usePlaylistManager = () => {
               const fileUrl = await fileStorage.getFile(video.id);
               if (fileUrl) {
                 restored.fileUrl = fileUrl;
+              } else {
+                // 如果无法从IndexedDB获取文件，尝试重新创建
+                console.warn('Unable to restore file URL for video:', video.id, 'attempting to recreate...');
+                // 标记为需要重新上传
+                restored.fileUrl = undefined;
               }
             } catch (error) {
               console.error('Error restoring file for video:', video.id, error);
+              restored.fileUrl = undefined;
             }
             return restored;
           })
@@ -495,6 +501,41 @@ export const usePlaylistManager = () => {
     return videos.find(v => v.id === id);
   };
 
+  // 检查并修复视频文件URL
+  const validateAndFixVideoUrl = async (videoId: string): Promise<string | null> => {
+    const video = videos.find(v => v.id === videoId);
+    if (!video) return null;
+
+    // 如果已经有有效的URL，直接返回
+    if (video.fileUrl) {
+      // 检查URL是否仍然有效
+      try {
+        const response = await fetch(video.fileUrl, { method: 'HEAD' });
+        if (response.ok) {
+          return video.fileUrl;
+        }
+      } catch (error) {
+        console.warn('Video URL validation failed:', error);
+      }
+    }
+
+    // 尝试从IndexedDB重新获取文件
+    try {
+      const fileUrl = await fileStorage.getFile(videoId);
+      if (fileUrl) {
+        // 更新video对象中的URL
+        setVideos(prev => prev.map(v => 
+          v.id === videoId ? { ...v, fileUrl } : v
+        ));
+        return fileUrl;
+      }
+    } catch (error) {
+      console.error('Error getting file from storage:', error);
+    }
+
+    return null;
+  };
+
   // 清理对象URLs
   useEffect(() => {
     return () => {
@@ -523,6 +564,7 @@ export const usePlaylistManager = () => {
     getStats,
     deleteVideo,
     getVideoById,
+    validateAndFixVideoUrl,
     getTodayNewVideos,
     getTodayAudioReviews,
     getTodayVideoReviews,

@@ -28,6 +28,7 @@ function App() {
     getStats,
     deleteVideo,
     updatePlaylistProgress,
+    validateAndFixVideoUrl,
     getTodayNewVideos,
     getTodayAudioReviews,
     getTodayVideoReviews,
@@ -279,7 +280,6 @@ function App() {
         <VideoUpload 
           collections={collections}
           onVideoAdd={handleVideoAdd}
-          onCreateCollection={createCollection}
         />
 
         {/* Video Library */}
@@ -350,6 +350,7 @@ function App() {
           onPlaylistComplete={handlePlaylistComplete}
           initialIndex={currentPlaylist.lastPlayedIndex}
           isAudioMode={currentPlaylist.playlistType === 'audio'}
+          validateAndFixVideoUrl={validateAndFixVideoUrl}
         />
       )}
 
