@@ -1,6 +1,15 @@
 import React, { useState } from 'react';
 import { Lock, Eye, EyeOff } from 'lucide-react';
 
+// 验证码配置
+const AUTH_CODES = {
+  '20250001': 10, // 10天
+  '20250002': 10, // 10天
+  '20250003': 10, // 10天
+  '20251017': 10, // 10天
+  '198510160174': -1, // 无限制
+};
+
 interface AuthGuardProps {
   children: React.ReactNode;
 }
@@ -11,9 +20,6 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Simple password check - you can change this password
-  const APP_PASSWORD = 'learning2024'; // Change this to your desired password
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -21,22 +27,63 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
     // Simulate loading delay
     await new Promise(resolve => setTimeout(resolve, 500));
     
-    if (password === APP_PASSWORD) {
+    // 检查预设的验证码
+    if (AUTH_CODES.hasOwnProperty(password)) {
+      const validDays = AUTH_CODES[password as keyof typeof AUTH_CODES];
       setIsAuthenticated(true);
-      // Store authentication state in localStorage
       localStorage.setItem('app_authenticated', 'true');
-    } else {
-      alert('密码错误，请重试');
-      setPassword('');
+      
+      if (validDays === -1) {
+        // 无限制使用
+        localStorage.setItem('app_auth_expiry', 'unlimited');
+      } else {
+        // 设置过期时间
+        const expiryDate = new Date();
+        expiryDate.setDate(expiryDate.getDate() + validDays);
+        localStorage.setItem('app_auth_expiry', expiryDate.toISOString());
+      }
+      
+      setIsLoading(false);
+      return;
     }
+    
+    // 检查19位数字验证码（180天使用权）
+    if (password.length === 19 && /^\d{19}$/.test(password)) {
+      setIsAuthenticated(true);
+      localStorage.setItem('app_authenticated', 'true');
+      
+      const expiryDate = new Date();
+      expiryDate.setDate(expiryDate.getDate() + 180);
+      localStorage.setItem('app_auth_expiry', expiryDate.toISOString());
+      
+      setIsLoading(false);
+      return;
+    }
+    
+    alert('验证码错误，请重试');
+    setPassword('');
     setIsLoading(false);
   };
 
-  // Check if user was previously authenticated
+  // Check if user was previously authenticated and not expired
   React.useEffect(() => {
-    const isAuth = localStorage.getItem('app_authenticated');
-    if (isAuth === 'true') {
-      setIsAuthenticated(true);
+    const authStatus = localStorage.getItem('app_authenticated');
+    const authExpiry = localStorage.getItem('app_auth_expiry');
+    
+    if (authStatus === 'true') {
+      if (authExpiry === 'unlimited') {
+        setIsAuthenticated(true);
+      } else if (authExpiry) {
+        const expiryDate = new Date(authExpiry);
+        const now = new Date();
+        if (now < expiryDate) {
+          setIsAuthenticated(true);
+        } else {
+          // 认证已过期，清除本地存储
+          localStorage.removeItem('app_authenticated');
+          localStorage.removeItem('app_auth_expiry');
+        }
+      }
     }
   }, []);
 
@@ -55,14 +102,14 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
             PWA Video Learning App
           </h1>
           <p className="text-gray-600">
-            请输入访问密码以继续使用应用
+            请输入验证码以获得使用权限
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              访问密码
+              验证码
             </label>
             <div className="relative">
               <input
@@ -70,7 +117,7 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent pr-12"
-                placeholder="输入访问密码"
+                placeholder="输入验证码"
                 required
                 disabled={isLoading}
               />
@@ -95,7 +142,7 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
                 验证中...
               </div>
             ) : (
-              '进入应用'
+              '验证并进入'
             )}
           </button>
         </form>
@@ -103,6 +150,10 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
         <div className="mt-6 text-center text-sm text-gray-500">
           <p>基于艾宾浩斯遗忘曲线的科学复习系统</p>
           <p className="mt-1">支持音频/视频复习模式</p>
+          <p className="mt-2 text-xs">
+            • 短期验证码：10天使用权<br/>
+            • 19位数字验证码：180天使用权
+          </p>
         </div>
       </div>
     </div>
