@@ -38,6 +38,16 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const currentItem = playlist[currentIndex];
   const currentVideo = videos.find(v => v.id === currentItem?.videoId);
 
+  // 调试信息
+  console.log('Debug info:', {
+    currentIndex,
+    playlistLength: playlist.length,
+    currentItem,
+    currentVideo,
+    videosCount: videos.length,
+    userAgent: navigator.userAgent
+  });
+
   // 检测设备
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
@@ -92,8 +102,18 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     };
   }, [isPlaying, controlsTimeout]);
 
-  // 视频容器点击时切换控制栏显示
+  // 视频容器点击时切换控制栏显示或启动播放
   const handleVideoClick = () => {
+    if (!userInteracted) {
+      // 首次点击时设置用户交互并尝试播放
+      setUserInteracted(true);
+      if (videoRef.current && !isPlaying) {
+        videoRef.current.play().catch(error => {
+          console.log('手动播放失败:', error);
+        });
+      }
+    }
+    
     if (isPlaying) {
       setShowControls(!showControls);
       if (controlsTimeout) {
@@ -136,7 +156,8 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         setIsLoading(false);
         setVideoError(false);
         
-        if (autoPlay && currentIndex >= initialIndex && userInteracted) {
+        // 移除严格的用户交互检测，允许视频准备好后立即播放
+        if (autoPlay && currentIndex >= initialIndex) {
           setTimeout(() => {
             if (!videoError && video.readyState >= 2) {
               const playPromise = video.play();
@@ -144,13 +165,16 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
                 playPromise
                   .then(() => {
                     setIsPlaying(true);
+                    setUserInteracted(true); // 成功播放后设置用户交互
                   })
-                  .catch(() => {
+                  .catch((error) => {
+                    console.log('自动播放失败，需要用户交互:', error);
                     setIsLoading(false);
+                    // 播放失败时不设置错误，只是等待用户点击
                   });
               }
             }
-          }, 500);
+          }, 200); // 减少延迟时间
         } else {
           setIsLoading(false);
         }
