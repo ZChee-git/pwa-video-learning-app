@@ -170,12 +170,6 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
                 {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
             </div>
-            <div className="mt-2 text-sm text-gray-500">
-              <p>• 8位数字码：10天使用权</p>
-              <p>• 19位数字码：180天使用权</p>
-              <p>• 28位数字码：180天使用权</p>
-              <p>• 特殊码：无限制使用</p>
-            </div>
           </div>
 
           <button
