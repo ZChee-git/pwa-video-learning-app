@@ -1,8 +1,8 @@
 {
-  "name": "PWA Video Learning App",
-  "short_name": "VideoLearning",
-  "description": "A Progressive Web App for video learning management based on Ebbinghaus forgetting curve",
-  "theme_color": "#2563eb",
+  "name": "智能复习系统",
+  "short_name": "智能复习",
+  "description": "基于艾宾浩斯遗忘曲线理论安排90天内的复习时间点，助力高效掌握学习内容",
+  "theme_color": "#8b5cf6",
   "background_color": "#ffffff",
   "display": "standalone",
   "orientation": "portrait",

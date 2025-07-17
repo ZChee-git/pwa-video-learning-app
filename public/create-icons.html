@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Generate PWA Icons</title>
+</head>
+<body>
+    <h1>PWA 图标生成器</h1>
+    <canvas id="canvas192" width="192" height="192" style="border: 1px solid black;"></canvas>
+    <canvas id="canvas512" width="512" height="512" style="border: 1px solid black;"></canvas>
+    <br><br>
+    <button onclick="generateIcons()">生成图标</button>
+    <button onclick="downloadIcons()">下载图标</button>
+    
+    <script>
+        function generateIcons() {
+            generateIcon(192, '#8b5cf6', '智能\n复习');
+            generateIcon(512, '#8b5cf6', '智能\n复习');
+        }
+        
+        function generateIcon(size, color, text) {
+            const canvas = document.getElementById(`canvas${size}`);
+            const ctx = canvas.getContext('2d');
+            
+            // 背景
+            ctx.fillStyle = color;
+            ctx.fillRect(0, 0, size, size);
+            
+            // 文字
+            ctx.fillStyle = 'white';
+            ctx.font = `bold ${size/8}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            const lines = text.split('\n');
+            const lineHeight = size/6;
+            const startY = size/2 - (lines.length - 1) * lineHeight/2;
+            
+            lines.forEach((line, index) => {
+                ctx.fillText(line, size/2, startY + index * lineHeight);
+            });
+        }
+        
+        function downloadIcons() {
+            downloadCanvas('canvas192', 'icon-192.png');
+            downloadCanvas('canvas512', 'icon-512.png');
+        }
+        
+        function downloadCanvas(canvasId, filename) {
+            const canvas = document.getElementById(canvasId);
+            const link = document.createElement('a');
+            link.download = filename;
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+    </script>
+</body>
+</html>
