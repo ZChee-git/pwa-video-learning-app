@@ -9,6 +9,7 @@ import { VideoLibrary } from './components/VideoLibrary';
 import { VideoPlayer } from './components/VideoPlayer';
 import { InstallPrompt } from './components/InstallPrompt';
 import { CollectionManager } from './components/CollectionManager';
+import { AuthGuard } from './components/AuthGuard';
 
 function App() {
   const {
@@ -143,8 +144,9 @@ function App() {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      <div className="container mx-auto px-4 py-8">
+    <AuthGuard>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+        <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="text-center mb-12">
           <div className="flex items-center justify-center mb-4">
@@ -353,7 +355,8 @@ function App() {
 
       {/* Install Prompt */}
       <InstallPrompt />
-    </div>
+      </div>
+    </AuthGuard>
   );
 }
 
