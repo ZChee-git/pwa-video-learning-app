@@ -26,7 +26,7 @@ export const usePlaylistManager = () => {
   // 艾宾浩斯复习间隔：第2、4、7、15、30、90天
   const REVIEW_INTERVALS = [2, 4, 7, 15, 30, 90];
   const MAX_NEW_PER_DAY = 4; // 每日新学习数量改为4集
-  // const MAX_REVIEW_PER_DAY = 6; // 每日最大复习数量 - 暂时不使用
+  const MAX_REVIEW_PER_DAY = 6; // 每日最大复习数量
 
   // 初始化数据
   useEffect(() => {
@@ -102,27 +102,51 @@ export const usePlaylistManager = () => {
   };
 
   const createCollection = (name: string, description?: string) => {
-    const newCollection: Collection = {
-      id: generateUUID(),
-      name,
-      description,
-      dateCreated: new Date(),
-      isActive: true,
-      totalVideos: 0,
-      completedVideos: 0,
-      color: generateRandomColor(),
-    };
-
-    setCollections(prev => [...prev, newCollection]);
-    return newCollection.id;
+    try {
+      console.log('usePlaylistManager: Creating collection:', name, description);
+      
+      const newCollection: Collection = {
+        id: generateUUID(),
+        name,
+        description,
+        dateCreated: new Date(),
+        isActive: true,
+        totalVideos: 0,
+        completedVideos: 0,
+        color: generateRandomColor(),
+      };
+      
+      console.log('usePlaylistManager: New collection object:', newCollection);
+      setCollections(prev => {
+        const updated = [...prev, newCollection];
+        console.log('usePlaylistManager: Updated collections:', updated);
+        return updated;
+      });
+      
+      return newCollection;
+    } catch (error) {
+      console.error('usePlaylistManager: Error creating collection:', error);
+      throw new Error(`创建合辑失败: ${error instanceof Error ? error.message : '未知错误'}`);
+    }
   };
 
   const updateCollection = (collectionId: string, name: string, description?: string) => {
-    setCollections(prev => prev.map(collection => 
-      collection.id === collectionId 
-        ? { ...collection, name, description }
-        : collection
-    ));
+    try {
+      console.log('usePlaylistManager: Updating collection:', collectionId, name, description);
+      
+      setCollections(prev => {
+        const updated = prev.map(collection => 
+          collection.id === collectionId 
+            ? { ...collection, name, description }
+            : collection
+        );
+        console.log('usePlaylistManager: Updated collections:', updated);
+        return updated;
+      });
+    } catch (error) {
+      console.error('usePlaylistManager: Error updating collection:', error);
+      throw new Error(`更新合辑失败: ${error instanceof Error ? error.message : '未知错误'}`);
+    }
   };
 
   const deleteCollection = async (collectionId: string) => {
@@ -156,50 +180,56 @@ export const usePlaylistManager = () => {
   };
 
   const addVideos = async (files: File[], collectionId: string) => {
-    console.log('addVideos called with:', { files, collectionId });
-    
-    try {
-      const newVideos: VideoFile[] = files.map((file, index) => {
-        console.log(`Processing file ${index + 1}/${files.length}:`, file.name);
-        
+    const newVideos: VideoFile[] = await Promise.all(
+      files.map(async (file, index) => {
         const id = generateUUID();
-        console.log('Generated UUID:', id);
         
-        // 简化处理：直接使用URL.createObjectURL
-        const fileUrl = URL.createObjectURL(file);
-        console.log('Created file URL:', fileUrl);
-        
-        return {
-          id,
-          name: file.name.replace(/\.[^/.]+$/, ""),
-          file,
-          fileUrl,
-          dateAdded: new Date(),
-          reviewCount: 0,
-          status: 'new' as const,
-          collectionId,
-          episodeNumber: index + 1,
-        };
-      });
+        try {
+          // 保存文件到 IndexedDB 并获取 URL
+          const fileUrl = await fileStorage.saveFile(id, file);
+          
+          return {
+            id,
+            name: file.name.replace(/\.[^/.]+$/, ""),
+            file,
+            fileUrl,
+            dateAdded: new Date(),
+            reviewCount: 0,
+            status: 'new' as const,
+            collectionId,
+            episodeNumber: index + 1,
+          };
+        } catch (error) {
+          console.error('Error saving file:', file.name, error);
+          // 如果保存失败，使用临时 URL
+          return {
+            id,
+            name: file.name.replace(/\.[^/.]+$/, ""),
+            file,
+            fileUrl: URL.createObjectURL(file),
+            dateAdded: new Date(),
+            reviewCount: 0,
+            status: 'new' as const,
+            collectionId,
+            episodeNumber: index + 1,
+          };
+        }
+      })
+    );
 
-      console.log('All files processed successfully:', newVideos);
-      setVideos(prev => [...prev, ...newVideos]);
-      
-      // 更新合辑统计
-      setCollections(prev => prev.map(collection => 
-        collection.id === collectionId 
+    setVideos(prev => [...prev, ...newVideos]);
+    
+    // 更新合辑统计
+    setCollections(prev => prev.map(collection => 
+      collection.id === collectionId 
         ? { 
             ...collection, 
             totalVideos: collection.totalVideos + newVideos.length 
           }
         : collection
-      ));
+    ));
 
-      return newVideos.map(v => v.id);
-    } catch (error) {
-      console.error('Error in addVideos:', error);
-      throw error;
-    }
+    return newVideos.map(v => v.id);
   };
 
   const markVideoAsPlayed = (videoId: string) => {
@@ -224,7 +254,7 @@ export const usePlaylistManager = () => {
           let nextReviewDate: Date | undefined;
           let status: VideoFile['status'] = 'learning';
 
-          if (newReviewCount < 6) { // 修改为6次复习
+          if (newReviewCount < 5) {
             nextReviewDate = new Date(now);
             nextReviewDate.setDate(nextReviewDate.getDate() + REVIEW_INTERVALS[newReviewCount - 1]);
           } else {
@@ -261,27 +291,18 @@ export const usePlaylistManager = () => {
     const activeCollectionIds = collections.filter(c => c.isActive).map(c => c.id);
     const activeVideos = videos.filter(v => activeCollectionIds.includes(v.collectionId));
     
-    console.log('getTodayNewVideos - Active collection IDs:', activeCollectionIds);
-    console.log('getTodayNewVideos - Active videos:', activeVideos);
-    
     let newVideos: VideoFile[] = [];
     if (isExtraSession) {
       newVideos = activeVideos.filter(v => v.status === 'new').slice(0, MAX_NEW_PER_DAY + 2);
     } else {
       newVideos = activeVideos.filter(v => v.status === 'new').slice(0, MAX_NEW_PER_DAY);
     }
-    
-    console.log('getTodayNewVideos - Selected new videos:', newVideos);
-    
-    const playlistItems = newVideos.map(video => ({
+
+    return newVideos.map(video => ({
       videoId: video.id,
-      reviewType: 'new' as const,
+      reviewType: 'new',
       reviewNumber: 1,
     }));
-    
-    console.log('getTodayNewVideos - Generated playlist items:', playlistItems);
-    
-    return playlistItems;
   };
 
   // 获取今日音频复习列表（包含所有1-5次复习）
@@ -310,11 +331,11 @@ export const usePlaylistManager = () => {
       reviewType: 'audio',
       reviewNumber: video.reviewCount + 1,
       daysSinceFirstPlay: video.firstPlayDate ? getDaysSinceFirstPlay(video.firstPlayDate) : 0,
-      isRecommendedForVideo: video.reviewCount >= 3, // 第4、5、6次复习建议观看视频
+      isRecommendedForVideo: video.reviewCount >= 3, // 第4、5次复习建议观看视频
     }));
   };
 
-  // 获取今日视频复习列表（只包含第4、5、6次复习）
+  // 获取今日视频复习列表（只包含第4、5次复习）
   const getTodayVideoReviews = (): PlaylistItem[] => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -326,7 +347,7 @@ export const usePlaylistManager = () => {
       if (!video.nextReviewDate || video.status === 'completed') return false;
       const reviewDate = new Date(video.nextReviewDate);
       reviewDate.setHours(0, 0, 0, 0);
-      // 只包含第4、5、6次复习（reviewCount >= 3）
+      // 只包含第4、5次复习（reviewCount >= 3）
       return reviewDate.getTime() <= today.getTime() && video.reviewCount >= 3;
     });
 
