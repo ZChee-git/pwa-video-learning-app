@@ -7,6 +7,7 @@ import './index.css';
 // 导入应用初始化脚本
 import './utils/appInitializer.js';
 import './utils/videoRecovery.js';
+import './utils/apkDataManager.js';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
