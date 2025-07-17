@@ -148,12 +148,7 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
         </form>
 
         <div className="mt-6 text-center text-sm text-gray-500">
-          <p>基于艾宾浩斯遗忘曲线的科学复习系统</p>
-          <p className="mt-1">支持音频/视频复习模式</p>
-          <p className="mt-2 text-xs">
-            • 短期验证码：10天使用权<br/>
-            • 19位数字验证码：180天使用权
-          </p>
+          <p>基于艾宾浩斯遗忘曲线理论安排90天内的复习时间点，助力高效掌握学习内容。</p>
         </div>
       </div>
     </div>
