@@ -19,6 +19,7 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true); // 添加检查状态
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,6 +33,7 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
       const validDays = AUTH_CODES[password as keyof typeof AUTH_CODES];
       setIsAuthenticated(true);
       localStorage.setItem('app_authenticated', 'true');
+      localStorage.setItem('app_auth_code', password); // 保存使用的验证码
       
       if (validDays === -1) {
         // 无限制使用
@@ -51,6 +53,7 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
     if (password.length === 19 && /^\d{19}$/.test(password)) {
       setIsAuthenticated(true);
       localStorage.setItem('app_authenticated', 'true');
+      localStorage.setItem('app_auth_code', password); // 保存使用的验证码
       
       const expiryDate = new Date();
       expiryDate.setDate(expiryDate.getDate() + 180);
@@ -64,6 +67,7 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
     if (password.length === 28 && /^\d{28}$/.test(password)) {
       setIsAuthenticated(true);
       localStorage.setItem('app_authenticated', 'true');
+      localStorage.setItem('app_auth_code', password); // 保存使用的验证码
       
       const expiryDate = new Date();
       expiryDate.setDate(expiryDate.getDate() + 180);
@@ -95,10 +99,34 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
           // 认证已过期，清除本地存储
           localStorage.removeItem('app_authenticated');
           localStorage.removeItem('app_auth_expiry');
+          localStorage.removeItem('app_auth_code');
         }
       }
     }
+    setIsCheckingAuth(false);
   }, []);
+
+  // 显示加载状态
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-600 via-blue-600 to-indigo-700 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
+          <div className="text-center">
+            <div className="mx-auto w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mb-4">
+              <Lock className="text-purple-600" size={32} />
+            </div>
+            <h1 className="text-2xl font-bold text-gray-800 mb-2">
+              智能播放系统
+            </h1>
+            <div className="flex items-center justify-center">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600 mr-2"></div>
+              <span className="text-gray-600">正在检查认证状态...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (isAuthenticated) {
     return <>{children}</>;
@@ -112,7 +140,7 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
             <Lock className="text-purple-600" size={32} />
           </div>
           <h1 className="text-2xl font-bold text-gray-800 mb-2">
-            PWA Video Learning App
+            智能播放系统
           </h1>
           <p className="text-gray-600">
             请输入验证码以获得使用权限
@@ -141,6 +169,12 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
               >
                 {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
+            </div>
+            <div className="mt-2 text-sm text-gray-500">
+              <p>• 8位数字码：10天使用权</p>
+              <p>• 19位数字码：180天使用权</p>
+              <p>• 28位数字码：180天使用权</p>
+              <p>• 特殊码：无限制使用</p>
             </div>
           </div>
 

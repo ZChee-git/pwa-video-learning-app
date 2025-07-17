@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Brain, Play, RotateCcw, History, BookOpen, Plus, Loader, Headphones, Video } from 'lucide-react';
+import { Brain, Play, RotateCcw, History, BookOpen, Plus, Loader, Headphones, Video, LogOut } from 'lucide-react';
 import { usePlaylistManager } from './hooks/usePlaylistManager';
 import { VideoUpload } from './components/VideoUpload';
 import { StatsCard } from './components/StatsCard';
@@ -38,6 +38,32 @@ function App() {
   const [currentPreview, setCurrentPreview] = useState(generateTodayPlaylist());
   const [currentPlaylist, setCurrentPlaylist] = useState<any>(null);
   const [previewType, setPreviewType] = useState<'new' | 'audio' | 'video'>('new');
+
+  // 注销功能
+  const handleLogout = () => {
+    if (confirm('确定要注销吗？下次进入需要重新输入验证码。')) {
+      localStorage.removeItem('app_authenticated');
+      localStorage.removeItem('app_auth_expiry');
+      localStorage.removeItem('app_auth_code');
+      window.location.reload();
+    }
+  };
+
+  // 获取认证状态信息
+  const getAuthInfo = () => {
+    const authExpiry = localStorage.getItem('app_auth_expiry');
+    const authCode = localStorage.getItem('app_auth_code');
+    
+    if (authExpiry === 'unlimited') {
+      return '无限制使用';
+    } else if (authExpiry) {
+      const expiryDate = new Date(authExpiry);
+      const now = new Date();
+      const daysLeft = Math.ceil((expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+      return `剩余 ${daysLeft} 天`;
+    }
+    return '未知状态';
+  };
 
   useEffect(() => {
     // Track collections updates
@@ -138,11 +164,26 @@ function App() {
         <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="text-center mb-12">
-          <div className="flex items-center justify-center mb-4">
+          <div className="flex items-center justify-center mb-4 relative">
             <Brain className="text-blue-600 mr-4" size={48} />
             <h1 className="text-4xl font-bold text-gray-800">
               智能播放系统
             </h1>
+            
+            {/* 认证状态和注销按钮 */}
+            <div className="absolute right-0 top-0 flex items-center space-x-4">
+              <div className="text-sm text-gray-600 bg-gray-100 px-3 py-1 rounded-lg">
+                {getAuthInfo()}
+              </div>
+              <button
+                onClick={handleLogout}
+                className="flex items-center space-x-2 text-red-600 hover:text-red-700 hover:bg-red-50 px-3 py-1 rounded-lg transition-colors"
+                title="注销"
+              >
+                <LogOut size={16} />
+                <span className="text-sm">注销</span>
+              </button>
+            </div>
           </div>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
             基于艾宾浩斯遗忘曲线理论安排90天内的复习时间点，助力高效掌握学习内容。
