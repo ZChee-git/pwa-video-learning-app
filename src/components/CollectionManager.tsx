@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FolderPlus, Folder, Check, Edit2, Trash2, Play, BarChart3 } from 'lucide-react';
 import { Collection, VideoFile } from '../types';
 
 interface CollectionManagerProps {
   collections: Collection[];
   videos: VideoFile[];
-  onCreateCollection: (name: string, description?: string) => void;
+  onCreateCollection: (name: string, description?: string) => Collection;
   onToggleCollection: (collectionId: string) => void;
   onDeleteCollection: (collectionId: string) => void;
   onUpdateCollection: (collectionId: string, name: string, description?: string) => void;
@@ -23,17 +23,41 @@ export const CollectionManager: React.FC<CollectionManagerProps> = ({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({ name: '', description: '' });
 
+  useEffect(() => {
+    // Auto-refresh functionality when collections change
+    if (collections.length > 0) {
+      // Page refresh logic if needed
+    }
+  }, [collections]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (formData.name.trim()) {
+    e.stopPropagation();
+    
+    if (!formData.name.trim()) {
+      alert('请输入合辑名称');
+      return;
+    }
+    
+    try {
       if (editingId) {
         onUpdateCollection(editingId, formData.name.trim(), formData.description.trim());
         setEditingId(null);
+        alert('合辑更新成功！');
       } else {
         onCreateCollection(formData.name.trim(), formData.description.trim());
         setShowCreateForm(false);
+        alert('合辑创建成功！');
       }
       setFormData({ name: '', description: '' });
+    } catch (error) {
+      console.error('CollectionManager: Error in handleSubmit:', error);
+      let errorMessage = '操作失败';
+      if (error instanceof Error) {
+        errorMessage = `操作失败: ${error.message}`;
+        console.error('CollectionManager: Detailed error:', error.stack);
+      }
+      alert(errorMessage);
     }
   };
 
@@ -56,23 +80,30 @@ export const CollectionManager: React.FC<CollectionManagerProps> = ({
 
   return (
     <div className="bg-white rounded-xl shadow-lg p-8 mb-8">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-800 flex items-center mb-4">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold text-gray-800 flex items-center">
           <Folder className="mr-3 text-purple-600" size={28} />
           学习合辑
-        </h2>
-        <div className="flex justify-between items-center">
-          <span className="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-sm font-medium">
+          <span className="ml-3 bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-sm font-medium">
             {collections.filter(c => c.isActive).length} 个活跃
           </span>
-          <button
-            onClick={() => setShowCreateForm(true)}
-            className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium flex items-center transition-colors"
-          >
-            <FolderPlus size={20} className="mr-2" />
-            新建合辑
-          </button>
-        </div>
+        </h2>
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setShowCreateForm(true);
+          }}
+          onTouchEnd={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setShowCreateForm(true);
+          }}
+          className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium flex items-center transition-colors"
+        >
+          <FolderPlus size={20} className="mr-2" />
+          新建合辑
+        </button>
       </div>
 
       {/* 创建/编辑表单 */}
@@ -110,13 +141,27 @@ export const CollectionManager: React.FC<CollectionManagerProps> = ({
             <div className="flex space-x-3">
               <button
                 type="submit"
+                onTouchEnd={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleSubmit(e);
+                }}
                 className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium"
               >
                 {editingId ? '更新' : '创建'}
               </button>
               <button
                 type="button"
-                onClick={() => {
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setShowCreateForm(false);
+                  setEditingId(null);
+                  setFormData({ name: '', description: '' });
+                }}
+                onTouchEnd={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
                   setShowCreateForm(false);
                   setEditingId(null);
                   setFormData({ name: '', description: '' });

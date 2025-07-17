@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Brain, Play, RotateCcw, History, BookOpen, Plus, Loader, Headphones, Video, Settings } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Brain, Play, RotateCcw, History, BookOpen, Plus, Loader, Headphones, Video } from 'lucide-react';
 import { usePlaylistManager } from './hooks/usePlaylistManager';
 import { VideoUpload } from './components/VideoUpload';
 import { StatsCard } from './components/StatsCard';
@@ -9,7 +9,6 @@ import { VideoLibrary } from './components/VideoLibrary';
 import { VideoPlayer } from './components/VideoPlayer';
 import { InstallPrompt } from './components/InstallPrompt';
 import { CollectionManager } from './components/CollectionManager';
-import { VideoPlayerDebug } from './components/VideoPlayerDebug';
 
 function App() {
   const {
@@ -24,6 +23,7 @@ function App() {
     toggleCollection,
     generateTodayPlaylist,
     createTodayPlaylist,
+    getLastPlaylist,
     getStats,
     deleteVideo,
     updatePlaylistProgress,
@@ -35,59 +35,25 @@ function App() {
   const [showPreview, setShowPreview] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [showPlayer, setShowPlayer] = useState(false);
-  const [showDebugTool, setShowDebugTool] = useState(false);
   const [currentPreview, setCurrentPreview] = useState(generateTodayPlaylist());
   const [currentPlaylist, setCurrentPlaylist] = useState<any>(null);
   const [previewType, setPreviewType] = useState<'new' | 'audio' | 'video'>('new');
 
-  // 初始化视频持久化系统
   useEffect(() => {
-    const initializePersistence = async () => {
-      try {
-        const { initializeVideoPersistence, showIOSPWAInstallTip } = await import('./utils/videoPersistence');
-        initializeVideoPersistence();
-        
-        // 显示iOS PWA安装提示
-        showIOSPWAInstallTip();
-        
-        console.log('视频持久化系统初始化完成');
-      } catch (error) {
-        console.error('视频持久化系统初始化失败:', error);
-      }
-    };
+    // Track collections updates
+  }, [collections]);
 
-    initializePersistence();
-
-    // 监听视频数据更新事件
-    const handleVideoDataUpdate = (event: CustomEvent) => {
-      console.log('收到视频数据更新事件:', event.detail);
-      // 这里可以添加更新UI的逻辑
-    };
-
-    window.addEventListener('videoDataUpdated', handleVideoDataUpdate as EventListener);
-
-    return () => {
-      window.removeEventListener('videoDataUpdated', handleVideoDataUpdate as EventListener);
-    };
+  useEffect(() => {
+    window.localStorage.clear();
   }, []);
 
   const handleVideoAdd = async (files: File[], collectionId: string) => {
-    console.log('handleVideoAdd called with:', { files: files.map(f => f.name), collectionId });
-    
     try {
-      const result = await addVideos(files, collectionId);
-      console.log('addVideos result:', result);
-      
+      await addVideos(files, collectionId);
       // 重新生成预览
       setCurrentPreview(generateTodayPlaylist());
-      console.log('Video addition successful');
     } catch (error) {
       console.error('Error adding videos:', error);
-      console.error('Error details:', {
-        message: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-        name: error instanceof Error ? error.name : 'UnknownError'
-      });
       alert('添加视频失败，请重试');
     }
   };
@@ -122,6 +88,16 @@ function App() {
       // 开始新的学习
       const stats = getStats();
       handleShowPreview('new', stats.canAddExtra);
+    }
+  };
+
+  const handleContinueLastPlaylist = () => {
+    const lastPlaylist = getLastPlaylist();
+    if (lastPlaylist) {
+      setCurrentPlaylist(lastPlaylist);
+      setShowPlayer(true);
+    } else {
+      alert('没有未完成的播放列表');
     }
   };
 
@@ -171,28 +147,15 @@ function App() {
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="text-center mb-12">
-          <div className="flex items-center justify-center mb-4 relative">
+          <div className="flex items-center justify-center mb-4">
             <Brain className="text-blue-600 mr-4" size={48} />
-            <h1 
-              className="text-4xl font-bold text-gray-800 cursor-pointer select-none"
-              onDoubleClick={() => setShowDebugTool(true)}
-              title="双击打开调试工具"
-            >
-              智能复习学习系统
+            <h1 className="text-4xl font-bold text-gray-800">
+              视频复习系统
             </h1>
-            {/* 调试工具入口 - 在数据为空或者按住Ctrl点击标题时显示 */}
-            {(videos.length === 0 && playlists.length === 0) && (
-              <button
-                onClick={() => setShowDebugTool(true)}
-                className="absolute right-0 top-0 bg-gray-100 hover:bg-gray-200 text-gray-600 p-2 rounded-full transition-colors"
-                title="播放器调试工具"
-              >
-                <Settings size={20} />
-              </button>
-            )}
           </div>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            基于科学的间隔重复算法，在第2、4、7、15、30、90天进行复习，帮助您高效掌握视频内容。
+            基于科学的间隔重复算法，在第3、7、15、30天进行复习，帮助您高效掌握视频内容。
+            每日新学4集，支持音频和视频复习模式。
           </p>
         </div>
 
@@ -267,6 +230,17 @@ function App() {
             </button>
           </div>
 
+          {/* 继续上次播放 */}
+          <div className="mt-6 text-center">
+            <button
+              onClick={handleContinueLastPlaylist}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium flex items-center mx-auto transition-colors"
+            >
+              <RotateCcw size={20} className="mr-2" />
+              继续上次的播放列表
+            </button>
+          </div>
+
           {/* 播放历史 */}
           <div className="mt-4 text-center">
             <button
@@ -283,7 +257,17 @@ function App() {
         <CollectionManager
           collections={collections}
           videos={videos}
-          onCreateCollection={createCollection}
+          onCreateCollection={(name, description) => {
+            try {
+              console.log('App: Creating collection:', name, description);
+              const newCollection = createCollection(name, description);
+              console.log('App: Collection created successfully:', newCollection);
+              return newCollection;
+            } catch (error) {
+              console.error('App: Error creating collection:', error);
+              throw error;
+            }
+          }}
           onToggleCollection={toggleCollection}
           onDeleteCollection={deleteCollection}
           onUpdateCollection={updateCollection}
@@ -293,6 +277,7 @@ function App() {
         <VideoUpload 
           collections={collections}
           onVideoAdd={handleVideoAdd}
+          onCreateCollection={createCollection}
         />
 
         {/* Video Library */}
@@ -363,13 +348,6 @@ function App() {
           onPlaylistComplete={handlePlaylistComplete}
           initialIndex={currentPlaylist.lastPlayedIndex}
           isAudioMode={currentPlaylist.playlistType === 'audio'}
-        />
-      )}
-
-      {/* Debug Tool */}
-      {showDebugTool && (
-        <VideoPlayerDebug
-          onClose={() => setShowDebugTool(false)}
         />
       )}
 
