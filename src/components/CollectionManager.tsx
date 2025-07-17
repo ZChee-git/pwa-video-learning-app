@@ -80,30 +80,32 @@ export const CollectionManager: React.FC<CollectionManagerProps> = ({
 
   return (
     <div className="bg-white rounded-xl shadow-lg p-8 mb-8">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-800 flex items-center">
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-gray-800 flex items-center mb-4">
           <Folder className="mr-3 text-purple-600" size={28} />
           学习合辑
-          <span className="ml-3 bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-sm font-medium">
+        </h2>
+        <div className="flex justify-between items-center">
+          <span className="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-sm font-medium">
             {collections.filter(c => c.isActive).length} 个活跃
           </span>
-        </h2>
-        <button
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            setShowCreateForm(true);
-          }}
-          onTouchEnd={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            setShowCreateForm(true);
-          }}
-          className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium flex items-center transition-colors"
-        >
-          <FolderPlus size={20} className="mr-2" />
-          新建合辑
-        </button>
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setShowCreateForm(true);
+            }}
+            onTouchEnd={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setShowCreateForm(true);
+            }}
+            className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium flex items-center transition-colors"
+          >
+            <FolderPlus size={20} className="mr-2" />
+            新建合辑
+          </button>
+        </div>
       </div>
 
       {/* 创建/编辑表单 */}

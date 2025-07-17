@@ -24,7 +24,6 @@ function App() {
     toggleCollection,
     generateTodayPlaylist,
     createTodayPlaylist,
-    getLastPlaylist,
     getStats,
     deleteVideo,
     updatePlaylistProgress,
@@ -89,16 +88,6 @@ function App() {
       // 开始新的学习
       const stats = getStats();
       handleShowPreview('new', stats.canAddExtra);
-    }
-  };
-
-  const handleContinueLastPlaylist = () => {
-    const lastPlaylist = getLastPlaylist();
-    if (lastPlaylist) {
-      setCurrentPlaylist(lastPlaylist);
-      setShowPlayer(true);
-    } else {
-      alert('没有未完成的播放列表');
     }
   };
 
@@ -229,17 +218,6 @@ function App() {
               <span className="text-sm text-purple-100 mt-2">
                 {videoReviews.length} 个视频建议观看
               </span>
-            </button>
-          </div>
-
-          {/* 继续上次播放 */}
-          <div className="mt-6 text-center">
-            <button
-              onClick={handleContinueLastPlaylist}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium flex items-center mx-auto transition-colors"
-            >
-              <RotateCcw size={20} className="mr-2" />
-              继续上次的播放列表
             </button>
           </div>
 
