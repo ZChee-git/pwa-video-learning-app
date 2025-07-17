@@ -141,12 +141,11 @@ function App() {
           <div className="flex items-center justify-center mb-4">
             <Brain className="text-blue-600 mr-4" size={48} />
             <h1 className="text-4xl font-bold text-gray-800">
-              视频复习系统
+              智能复习系统
             </h1>
           </div>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            基于科学的间隔重复算法，在第3、7、15、30天进行复习，帮助您高效掌握视频内容。
-            每日新学4集，支持音频和视频复习模式。
+            基于艾宾浩斯遗忘曲线理论安排90天内的复习时间点，助力高效掌握学习内容。
           </p>
         </div>
 

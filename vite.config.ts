@@ -36,13 +36,13 @@ export default defineConfig({
         ]
       },
       manifest: {
-        name: '视频复习系统',
+        name: '智能复习系统',
         short_name: '视频复习',
         description: '科学间隔复习视频学习系统，支持音频/视频复习和离线使用。',
         theme_color: '#8b5cf6',
         background_color: '#f3f4f6',
         display: 'standalone',
-        orientation: 'any',
+        orientation: 'portrait',
         scope: '/',
         start_url: '/',
         icons: [
@@ -61,7 +61,7 @@ export default defineConfig({
     })
   ],
   server: {
-    host: '0.0.0.0',
+    host: true,
     port: 5173,
     strictPort: true,
     cors: true,
@@ -70,14 +70,7 @@ export default defineConfig({
     },
     middlewareMode: false,
     hmr: {
-      port: 24678,
-      host: '0.0.0.0'
-    },
-    headers: {
-      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
-      'Pragma': 'no-cache',
-      'Expires': '0',
-      'Surrogate-Control': 'no-store'
+      port: 24678
     }
   },
   build: {
