@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Brain, Play, RotateCcw, History, BookOpen, Plus, Loader, Headphones, Video, User } from 'lucide-react';
+import React, { useState } from 'react';
+import { Brain, Play, RotateCcw, History, BookOpen, Plus, Loader, Headphones, Video } from 'lucide-react';
 import { usePlaylistManager } from './hooks/usePlaylistManager';
 import { VideoUpload } from './components/VideoUpload';
 import { StatsCard } from './components/StatsCard';
@@ -9,8 +9,6 @@ import { VideoLibrary } from './components/VideoLibrary';
 import { VideoPlayer } from './components/VideoPlayer';
 import { InstallPrompt } from './components/InstallPrompt';
 import { CollectionManager } from './components/CollectionManager';
-import { AuthGuard } from './components/AuthGuard';
-import { AccountManager } from './components/AccountManager';
 
 function App() {
   const {
@@ -25,10 +23,10 @@ function App() {
     toggleCollection,
     generateTodayPlaylist,
     createTodayPlaylist,
+    getLastPlaylist,
     getStats,
     deleteVideo,
     updatePlaylistProgress,
-    validateAndFixVideoUrl,
     getTodayNewVideos,
     getTodayAudioReviews,
     getTodayVideoReviews,
@@ -40,25 +38,6 @@ function App() {
   const [currentPreview, setCurrentPreview] = useState(generateTodayPlaylist());
   const [currentPlaylist, setCurrentPlaylist] = useState<any>(null);
   const [previewType, setPreviewType] = useState<'new' | 'audio' | 'video'>('new');
-  const [showAccountManager, setShowAccountManager] = useState(false);
-
-  // 注销功能
-  const handleLogout = () => {
-    if (confirm('确定要注销吗？下次进入需要重新输入验证码。')) {
-      localStorage.removeItem('app_authenticated');
-      localStorage.removeItem('app_auth_expiry');
-      localStorage.removeItem('app_auth_code');
-      window.location.reload();
-    }
-  };
-
-  useEffect(() => {
-    // Track collections updates
-  }, [collections]);
-
-  useEffect(() => {
-    window.localStorage.clear();
-  }, []);
 
   const handleVideoAdd = async (files: File[], collectionId: string) => {
     try {
@@ -94,13 +73,41 @@ function App() {
     );
 
     if (lastNewPlaylist) {
-      // 继续上次的新学习
-      setCurrentPlaylist(lastNewPlaylist);
+      // 验证播放列表中的视频是否仍然存在
+      const validItems = lastNewPlaylist.items.filter(item => 
+        videos.some(v => v.id === item.videoId)
+      );
+      
+      if (validItems.length > 0) {
+        // 如果还有有效的视频，继续上次的新学习
+        const updatedPlaylist = { ...lastNewPlaylist, items: validItems };
+        setCurrentPlaylist(updatedPlaylist);
+        setShowPlayer(true);
+        return;
+      } else {
+        console.log('上次未完成的学习文件已不存在，开始新的学习');
+      }
+    }
+    
+    // 开始新的学习（如果没有未完成的或文件不存在）
+    const stats = getStats();
+    const newVideos = getTodayNewVideos();
+    
+    if (newVideos.length === 0) {
+      alert('当前没有可学习的新视频，请先添加视频到活跃合集中');
+      return;
+    }
+    
+    handleShowPreview('new', stats.canAddExtra);
+  };
+
+  const handleContinueLastPlaylist = () => {
+    const lastPlaylist = getLastPlaylist();
+    if (lastPlaylist) {
+      setCurrentPlaylist(lastPlaylist);
       setShowPlayer(true);
     } else {
-      // 开始新的学习
-      const stats = getStats();
-      handleShowPreview('new', stats.canAddExtra);
+      alert('没有未完成的播放列表');
     }
   };
 
@@ -146,30 +153,19 @@ function App() {
   );
 
   return (
-    <AuthGuard>
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-        <div className="container mx-auto px-4 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="text-center mb-12">
-          <div className="flex items-center justify-center mb-4 relative">
+          <div className="flex items-center justify-center mb-4">
             <Brain className="text-blue-600 mr-4" size={48} />
             <h1 className="text-4xl font-bold text-gray-800">
-              智能播放系统
+              艾宾浩斯视频学习系统
             </h1>
-            
-            {/* 账户管理按钮 */}
-            <div className="absolute right-0 top-0">
-              <button
-                onClick={() => setShowAccountManager(true)}
-                className="w-10 h-10 bg-blue-600 hover:bg-blue-700 text-white rounded-full flex items-center justify-center transition-colors shadow-lg hover:shadow-xl"
-                title="账户管理"
-              >
-                <User size={20} />
-              </button>
-            </div>
           </div>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            基于艾宾浩斯遗忘曲线理论安排90天内的复习时间点，助力高效掌握学习内容。
+            基于科学的间隔重复算法，在第3、7、15、30天进行复习，帮助您高效掌握视频内容。
+            每日新学4集，支持音频和视频复习模式。
           </p>
         </div>
 
@@ -244,6 +240,17 @@ function App() {
             </button>
           </div>
 
+          {/* 继续上次播放 */}
+          <div className="mt-6 text-center">
+            <button
+              onClick={handleContinueLastPlaylist}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium flex items-center mx-auto transition-colors"
+            >
+              <RotateCcw size={20} className="mr-2" />
+              继续上次的播放列表
+            </button>
+          </div>
+
           {/* 播放历史 */}
           <div className="mt-4 text-center">
             <button
@@ -260,17 +267,7 @@ function App() {
         <CollectionManager
           collections={collections}
           videos={videos}
-          onCreateCollection={(name, description) => {
-            try {
-              console.log('App: Creating collection:', name, description);
-              const newCollection = createCollection(name, description);
-              console.log('App: Collection created successfully:', newCollection);
-              return newCollection;
-            } catch (error) {
-              console.error('App: Error creating collection:', error);
-              throw error;
-            }
-          }}
+          onCreateCollection={createCollection}
           onToggleCollection={toggleCollection}
           onDeleteCollection={deleteCollection}
           onUpdateCollection={updateCollection}
@@ -280,6 +277,7 @@ function App() {
         <VideoUpload 
           collections={collections}
           onVideoAdd={handleVideoAdd}
+          onCreateCollection={createCollection}
         />
 
         {/* Video Library */}
@@ -350,21 +348,12 @@ function App() {
           onPlaylistComplete={handlePlaylistComplete}
           initialIndex={currentPlaylist.lastPlayedIndex}
           isAudioMode={currentPlaylist.playlistType === 'audio'}
-          validateAndFixVideoUrl={validateAndFixVideoUrl}
         />
       )}
 
       {/* Install Prompt */}
       <InstallPrompt />
-
-      {/* Account Manager */}
-      <AccountManager
-        isOpen={showAccountManager}
-        onClose={() => setShowAccountManager(false)}
-        onLogout={handleLogout}
-      />
-      </div>
-    </AuthGuard>
+    </div>
   );
 }
 

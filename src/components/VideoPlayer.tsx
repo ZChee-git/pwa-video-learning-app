@@ -104,17 +104,27 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
   // 视频容器点击时切换控制栏显示或启动播放
   const handleVideoClick = () => {
-    if (!userInteracted) {
-      // 首次点击时设置用户交互并尝试播放
-      setUserInteracted(true);
-      if (videoRef.current && !isPlaying) {
-        videoRef.current.play().catch(error => {
-          console.log('手动播放失败:', error);
-        });
-      }
-    }
+    console.log('视频点击事件', { isPlaying, userInteracted, isLoading });
     
-    if (isPlaying) {
+    if (!isPlaying && !isLoading) {
+      // 如果视频没有播放且没有在加载，尝试播放
+      if (videoRef.current) {
+        const playPromise = videoRef.current.play();
+        if (playPromise !== undefined) {
+          playPromise
+            .then(() => {
+              console.log('手动播放成功');
+              setIsPlaying(true);
+              setUserInteracted(true);
+            })
+            .catch(error => {
+              console.log('手动播放失败:', error);
+              setVideoError(true);
+            });
+        }
+      }
+    } else if (isPlaying) {
+      // 如果正在播放，切换控制栏显示
       setShowControls(!showControls);
       if (controlsTimeout) {
         clearTimeout(controlsTimeout);
@@ -148,33 +158,31 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
       }
       
       const handleLoadedMetadata = () => {
-        setIsLoading(false);
+        console.log('视频元数据加载完成');
         setDuration(video.duration);
       };
 
       const handleCanPlay = () => {
+        console.log('视频可以播放');
         setIsLoading(false);
         setVideoError(false);
         
-        // 移除严格的用户交互检测，允许视频准备好后立即播放
-        if (autoPlay && currentIndex >= initialIndex) {
-          setTimeout(() => {
-            if (!videoError && video.readyState >= 2) {
-              const playPromise = video.play();
-              if (playPromise !== undefined) {
-                playPromise
-                  .then(() => {
-                    setIsPlaying(true);
-                    setUserInteracted(true); // 成功播放后设置用户交互
-                  })
-                  .catch((error) => {
-                    console.log('自动播放失败，需要用户交互:', error);
-                    setIsLoading(false);
-                    // 播放失败时不设置错误，只是等待用户点击
-                  });
-              }
-            }
-          }, 200); // 减少延迟时间
+        // 简化自动播放逻辑，立即尝试播放
+        if (autoPlay) {
+          const playPromise = video.play();
+          if (playPromise !== undefined) {
+            playPromise
+              .then(() => {
+                console.log('自动播放成功');
+                setIsPlaying(true);
+                setUserInteracted(true);
+              })
+              .catch((error) => {
+                console.log('自动播放失败，等待用户交互:', error);
+                setIsLoading(false);
+                // 自动播放失败是正常的，等待用户点击
+              });
+          }
         } else {
           setIsLoading(false);
         }
