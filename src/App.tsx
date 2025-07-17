@@ -141,7 +141,7 @@ function App() {
           <div className="flex items-center justify-center mb-4">
             <Brain className="text-blue-600 mr-4" size={48} />
             <h1 className="text-4xl font-bold text-gray-800">
-              智能复习系统
+              智能播放系统
             </h1>
           </div>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
