@@ -4,6 +4,7 @@
 
 [build.environment]
   NODE_VERSION = "18"
+  NETLIFY_DEPLOY_TIMESTAMP = "2025-01-18"
 
 [[redirects]]
   from = "/*"
