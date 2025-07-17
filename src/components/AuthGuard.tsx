@@ -60,6 +60,19 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
       return;
     }
     
+    // 检查28位数字验证码（180天使用权）
+    if (password.length === 28 && /^\d{28}$/.test(password)) {
+      setIsAuthenticated(true);
+      localStorage.setItem('app_authenticated', 'true');
+      
+      const expiryDate = new Date();
+      expiryDate.setDate(expiryDate.getDate() + 180);
+      localStorage.setItem('app_auth_expiry', expiryDate.toISOString());
+      
+      setIsLoading(false);
+      return;
+    }
+    
     alert('验证码错误，请重试');
     setPassword('');
     setIsLoading(false);
