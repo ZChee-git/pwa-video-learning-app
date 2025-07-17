@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PWA 缓存清理指南</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #007AFF;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .step {
+            background: #f8f9fa;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border-left: 4px solid #007AFF;
+        }
+        .step h3 {
+            margin-top: 0;
+            color: #007AFF;
+        }
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .server-info {
+            background: #e7f3ff;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .server-url {
+            font-size: 24px;
+            font-weight: bold;
+            color: #007AFF;
+            margin: 10px 0;
+        }
+        button {
+            background: #007AFF;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .current-status {
+            background: #f1f1f1;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 PWA 缓存清理指南</h1>
+        
+        <div class="server-info">
+            <h3>📡 本地服务器已启动</h3>
+            <div class="server-url">http://localhost:8080</div>
+            <p>请在iOS Safari中打开上述地址</p>
+        </div>
+
+        <div class="step">
+            <h3>步骤1：删除旧的PWA</h3>
+            <p>1. 在iOS主屏幕上找到应用图标</p>
+            <p>2. 长按图标，选择"删除App"</p>
+            <p>3. 确认删除</p>
+        </div>
+
+        <div class="step">
+            <h3>步骤2：清理Safari缓存</h3>
+            <p>1. 打开iOS"设置"应用</p>
+            <p>2. 滚动到"Safari"</p>
+            <p>3. 点击"清除历史记录与网站数据"</p>
+            <p>4. 确认清除</p>
+        </div>
+
+        <div class="step">
+            <h3>步骤3：重新添加PWA</h3>
+            <p>1. 在Safari中打开：<strong>http://localhost:8080</strong></p>
+            <p>2. 等待页面完全加载</p>
+            <p>3. 点击底部的"分享"按钮 📤</p>
+            <p>4. 选择"添加到主屏幕"</p>
+            <p>5. 点击"添加"确认</p>
+        </div>
+
+        <div class="step">
+            <h3>步骤4：启动新的PWA</h3>
+            <p>1. 从主屏幕启动应用</p>
+            <p>2. 您的视频数据将自动恢复</p>
+            <p>3. 享受稳定的离线体验！</p>
+        </div>
+
+        <div class="warning">
+            <h3>⚠️ 重要提醒</h3>
+            <p>• 保持服务器运行直到完成PWA安装</p>
+            <p>• 视频数据存储在IndexedDB中，不会丢失</p>
+            <p>• 如果遇到问题，请重复清理步骤</p>
+        </div>
+
+        <div class="success">
+            <h3>✅ 成功标志</h3>
+            <p>当您能够从主屏幕启动应用并看到之前的视频时，说明修复成功！</p>
+        </div>
+
+        <div class="current-status">
+            <h4>当前状态检查：</h4>
+            <p id="serverStatus">正在检查服务器状态...</p>
+            <p id="networkStatus">正在检查网络连接...</p>
+        </div>
+
+        <div style="text-align: center; margin-top: 30px;">
+            <button onclick="window.open('http://localhost:8080', '_blank')">打开PWA应用</button>
+            <button onclick="checkStatus()">检查服务器状态</button>
+        </div>
+    </div>
+
+    <script>
+        function checkStatus() {
+            // 检查服务器状态
+            fetch('http://localhost:8080')
+                .then(response => {
+                    if (response.ok) {
+                        document.getElementById('serverStatus').textContent = '✅ 服务器运行正常';
+                        document.getElementById('serverStatus').style.color = 'green';
+                    } else {
+                        document.getElementById('serverStatus').textContent = '❌ 服务器响应异常';
+                        document.getElementById('serverStatus').style.color = 'red';
+                    }
+                })
+                .catch(error => {
+                    document.getElementById('serverStatus').textContent = '❌ 服务器未启动或不可访问';
+                    document.getElementById('serverStatus').style.color = 'red';
+                });
+            
+            // 检查网络状态
+            if (navigator.onLine) {
+                document.getElementById('networkStatus').textContent = '✅ 网络连接正常';
+                document.getElementById('networkStatus').style.color = 'green';
+            } else {
+                document.getElementById('networkStatus').textContent = '❌ 网络连接断开';
+                document.getElementById('networkStatus').style.color = 'red';
+            }
+        }
+
+        // 页面加载时自动检查状态
+        window.addEventListener('load', checkStatus);
+        
+        // 定期检查状态
+        setInterval(checkStatus, 30000); // 每30秒检查一次
+    </script>
+</body>
+</html>

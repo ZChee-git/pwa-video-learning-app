@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>视频修复工具</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            font-weight: 700;
+        }
+        
+        .header p {
+            margin: 10px 0 0;
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .status-card {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-left: 4px solid #007bff;
+        }
+        
+        .status-card.success {
+            border-left-color: #28a745;
+            background: #f8fff9;
+        }
+        
+        .status-card.error {
+            border-left-color: #dc3545;
+            background: #fff8f8;
+        }
+        
+        .status-card.warning {
+            border-left-color: #ffc107;
+            background: #fffbf0;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            margin: 5px;
+            min-width: 150px;
+        }
+        
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #0056b3;
+            transform: translateY(-2px);
+        }
+        
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #1e7e34;
+            transform: translateY(-2px);
+        }
+        
+        .btn-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+        
+        .btn-warning:hover {
+            background: #e0a800;
+            transform: translateY(-2px);
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #c82333;
+            transform: translateY(-2px);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .stat-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border: 2px solid transparent;
+        }
+        
+        .stat-item.highlight {
+            border-color: #007bff;
+            background: #e7f3ff;
+        }
+        
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #007bff;
+        }
+        
+        .stat-label {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .log {
+            background: #1e1e1e;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            margin: 20px 0;
+        }
+        
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #007bff, #28a745);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
+        .icon {
+            display: inline-block;
+            margin-right: 8px;
+            font-size: 1.2em;
+        }
+        
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🛠️ 视频修复工具</h1>
+            <p>自动诊断和修复视频加载问题</p>
+        </div>
+        
+        <div class="content">
+            <!-- 状态显示区域 -->
+            <div id="statusArea">
+                <div class="status-card" id="statusCard">
+                    <h3>📊 系统状态</h3>
+                    <p>正在初始化...</p>
+                </div>
+            </div>
+            
+            <!-- 统计信息 -->
+            <div class="stats" id="statsArea">
+                <div class="stat-item">
+                    <div class="stat-number" id="totalVideos">0</div>
+                    <div class="stat-label">总视频数</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="totalPlaylists">0</div>
+                    <div class="stat-label">播放列表数</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="validVideos">0</div>
+                    <div class="stat-label">有效视频数</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="issuesCount">0</div>
+                    <div class="stat-label">发现问题</div>
+                </div>
+            </div>
+            
+            <!-- 进度条 -->
+            <div class="progress-bar hidden" id="progressBar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            
+            <!-- 操作按钮 -->
+            <div class="actions">
+                <button class="btn btn-primary" onclick="diagnoseAll()">
+                    <span class="icon">🔍</span>重新诊断
+                </button>
+                <button class="btn btn-success" onclick="fixAll()" id="fixAllBtn">
+                    <span class="icon">🔧</span>一键修复
+                </button>
+                <button class="btn btn-warning" onclick="fixUrls()">
+                    <span class="icon">🔗</span>修复URL
+                </button>
+                <button class="btn btn-warning" onclick="fixPlaylists()">
+                    <span class="icon">📋</span>修复播放列表
+                </button>
+                <button class="btn btn-danger" onclick="resetAll()">
+                    <span class="icon">🗑️</span>清除所有数据
+                </button>
+            </div>
+            
+            <!-- 日志输出 -->
+            <div class="log" id="logArea">正在加载修复工具...</div>
+        </div>
+    </div>
+
+    <script>
+        // 视频修复工具类
+        class VideoFixTool {
+            constructor() {
+                this.videos = [];
+                this.playlists = [];
+                this.collections = [];
+                this.issues = [];
+                this.isProcessing = false;
+                this.log('🚀 视频修复工具初始化...');
+                this.loadData();
+                this.diagnoseAll();
+            }
+            
+            log(message) {
+                const logArea = document.getElementById('logArea');
+                const timestamp = new Date().toLocaleTimeString();
+                logArea.textContent += `[${timestamp}] ${message}\n`;
+                logArea.scrollTop = logArea.scrollHeight;
+                console.log(message);
+            }
+            
+            updateProgress(percent) {
+                const progressBar = document.getElementById('progressBar');
+                const progressFill = document.getElementById('progressFill');
+                
+                if (percent > 0) {
+                    progressBar.classList.remove('hidden');
+                    progressFill.style.width = percent + '%';
+                } else {
+                    progressBar.classList.add('hidden');
+                }
+            }
+            
+            updateStatus(message, type = 'info') {
+                const statusCard = document.getElementById('statusCard');
+                statusCard.className = `status-card ${type}`;
+                statusCard.innerHTML = `
+                    <h3>${type === 'success' ? '✅' : type === 'error' ? '❌' : type === 'warning' ? '⚠️' : '📊'} 系统状态</h3>
+                    <p>${message}</p>
+                `;
+            }
+            
+            updateStats() {
+                document.getElementById('totalVideos').textContent = this.videos.length;
+                document.getElementById('totalPlaylists').textContent = this.playlists.length;
+                document.getElementById('validVideos').textContent = this.videos.filter(v => v.file && v.file.size > 0).length;
+                document.getElementById('issuesCount').textContent = this.issues.length;
+                
+                // 高亮显示有问题的统计
+                const issuesElement = document.getElementById('issuesCount').parentElement;
+                if (this.issues.length > 0) {
+                    issuesElement.classList.add('highlight');
+                } else {
+                    issuesElement.classList.remove('highlight');
+                }
+            }
+            
+            loadData() {
+                try {
+                    this.videos = JSON.parse(localStorage.getItem('videos') || '[]');
+                    this.playlists = JSON.parse(localStorage.getItem('playlists') || '[]');
+                    this.collections = JSON.parse(localStorage.getItem('collections') || '[]');
+                    
+                    this.log(`✅ 数据加载完成: ${this.videos.length} 个视频, ${this.playlists.length} 个播放列表`);
+                    this.updateStats();
+                } catch (error) {
+                    this.log('❌ 数据加载失败: ' + error.message);
+                    this.updateStatus('数据加载失败', 'error');
+                }
+            }
+            
+            saveData() {
+                try {
+                    localStorage.setItem('videos', JSON.stringify(this.videos));
+                    localStorage.setItem('playlists', JSON.stringify(this.playlists));
+                    localStorage.setItem('collections', JSON.stringify(this.collections));
+                    this.log('✅ 数据保存成功');
+                } catch (error) {
+                    this.log('❌ 数据保存失败: ' + error.message);
+                }
+            }
+            
+            diagnoseAll() {
+                this.log('🔍 开始诊断问题...');
+                this.issues = [];
+                
+                // 检查视频数据
+                const videosWithoutFile = this.videos.filter(v => !v.file || !v.file.size);
+                const videosWithoutUrl = this.videos.filter(v => !v.fileUrl);
+                
+                if (videosWithoutFile.length > 0) {
+                    this.issues.push(`${videosWithoutFile.length} 个视频缺少文件对象`);
+                }
+                
+                if (videosWithoutUrl.length > 0) {
+                    this.issues.push(`${videosWithoutUrl.length} 个视频缺少文件URL`);
+                }
+                
+                // 检查播放列表匹配
+                let unmatchedItems = 0;
+                this.playlists.forEach(playlist => {
+                    playlist.items.forEach(item => {
+                        const matchingVideo = this.videos.find(v => v.id === item.videoId);
+                        if (!matchingVideo) {
+                            unmatchedItems++;
+                        }
+                    });
+                });
+                
+                if (unmatchedItems > 0) {
+                    this.issues.push(`${unmatchedItems} 个播放列表项目找不到对应视频`);
+                }
+                
+                this.updateStats();
+                
+                if (this.issues.length === 0) {
+                    this.log('✅ 诊断完成: 未发现问题');
+                    this.updateStatus('系统正常，未发现问题', 'success');
+                } else {
+                    this.log(`⚠️ 诊断完成: 发现 ${this.issues.length} 个问题`);
+                    this.issues.forEach(issue => this.log(`  - ${issue}`));
+                    this.updateStatus(`发现 ${this.issues.length} 个问题需要修复`, 'warning');
+                }
+            }
+            
+            async fixVideoUrls() {
+                this.log('🔧 开始修复视频URL...');
+                this.updateProgress(10);
+                
+                let fixed = 0;
+                const total = this.videos.length;
+                
+                for (let i = 0; i < this.videos.length; i++) {
+                    const video = this.videos[i];
+                    
+                    if (video.file && video.file.size > 0) {
+                        if (!video.fileUrl || video.fileUrl.startsWith('blob:')) {
+                            try {
+                                // 清除旧URL
+                                if (video.fileUrl && video.fileUrl.startsWith('blob:')) {
+                                    URL.revokeObjectURL(video.fileUrl);
+                                }
+                                
+                                // 创建新URL
+                                video.fileUrl = URL.createObjectURL(video.file);
+                                fixed++;
+                                this.log(`✅ 修复视频 ${i + 1}: ${video.name}`);
+                            } catch (error) {
+                                this.log(`❌ 修复视频 ${i + 1} 失败: ${error.message}`);
+                            }
+                        }
+                    }
+                    
+                    this.updateProgress(10 + (i / total) * 40);
+                    await new Promise(resolve => setTimeout(resolve, 50)); // 添加延迟以显示进度
+                }
+                
+                this.log(`🎉 URL修复完成，共修复 ${fixed} 个视频`);
+                return fixed;
+            }
+            
+            async fixPlaylistMatching() {
+                this.log('🔧 开始修复播放列表匹配...');
+                this.updateProgress(50);
+                
+                let fixed = 0;
+                const totalPlaylists = this.playlists.length;
+                
+                for (let pIndex = 0; pIndex < this.playlists.length; pIndex++) {
+                    const playlist = this.playlists[pIndex];
+                    
+                    for (let iIndex = 0; iIndex < playlist.items.length; iIndex++) {
+                        const item = playlist.items[iIndex];
+                        const matchingVideo = this.videos.find(v => v.id === item.videoId);
+                        
+                        if (!matchingVideo) {
+                            this.log(`修复播放列表 ${pIndex + 1} 项目 ${iIndex + 1}: ${item.videoId}`);
+                            
+                            // 策略1: 索引匹配
+                            const videoIndex = parseInt(item.videoId);
+                            if (!isNaN(videoIndex) && videoIndex >= 0 && videoIndex < this.videos.length) {
+                                item.videoId = this.videos[videoIndex].id;
+                                fixed++;
+                                this.log(`  ✅ 索引匹配成功`);
+                                continue;
+                            }
+                            
+                            // 策略2: 部分匹配
+                            const partialMatch = this.videos.find(v => 
+                                v.id.includes(item.videoId) || item.videoId.includes(v.id)
+                            );
+                            if (partialMatch) {
+                                item.videoId = partialMatch.id;
+                                fixed++;
+                                this.log(`  ✅ 部分匹配成功`);
+                                continue;
+                            }
+                            
+                            // 策略3: 使用第一个视频
+                            if (this.videos.length > 0) {
+                                item.videoId = this.videos[0].id;
+                                fixed++;
+                                this.log(`  ⚠️ 使用备用视频`);
+                            }
+                        }
+                    }
+                    
+                    this.updateProgress(50 + (pIndex / totalPlaylists) * 40);
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                }
+                
+                this.log(`🎉 播放列表修复完成，共修复 ${fixed} 个项目`);
+                return fixed;
+            }
+            
+            async fixAll() {
+                if (this.isProcessing) {
+                    this.log('⚠️ 正在处理中，请等待...');
+                    return;
+                }
+                
+                this.isProcessing = true;
+                const fixAllBtn = document.getElementById('fixAllBtn');
+                fixAllBtn.disabled = true;
+                fixAllBtn.innerHTML = '<span class="loading"></span>修复中...';
+                
+                try {
+                    this.log('🛠️ 开始一键修复...');
+                    this.updateStatus('正在修复中，请等待...', 'info');
+                    
+                    const startTime = Date.now();
+                    
+                    // 修复视频URL
+                    const urlsFixed = await this.fixVideoUrls();
+                    
+                    // 修复播放列表
+                    const playlistsFixed = await this.fixPlaylistMatching();
+                    
+                    // 保存数据
+                    this.updateProgress(90);
+                    this.saveData();
+                    
+                    // 重新诊断
+                    this.updateProgress(95);
+                    this.diagnoseAll();
+                    
+                    this.updateProgress(100);
+                    
+                    const endTime = Date.now();
+                    const duration = endTime - startTime;
+                    
+                    this.log(`🎉 修复完成！用时 ${duration}ms`);
+                    this.log(`📊 修复统计: ${urlsFixed} 个URL, ${playlistsFixed} 个播放列表项目`);
+                    
+                    if (this.issues.length === 0) {
+                        this.updateStatus('修复完成！所有问题已解决', 'success');
+                        
+                        if (confirm('修复完成！是否立即刷新页面以应用修复？')) {
+                            window.location.reload();
+                        }
+                    } else {
+                        this.updateStatus(`修复完成，但仍有 ${this.issues.length} 个问题未解决`, 'warning');
+                    }
+                    
+                } catch (error) {
+                    this.log('❌ 修复过程中出错: ' + error.message);
+                    this.updateStatus('修复失败: ' + error.message, 'error');
+                } finally {
+                    this.isProcessing = false;
+                    fixAllBtn.disabled = false;
+                    fixAllBtn.innerHTML = '<span class="icon">🔧</span>一键修复';
+                    this.updateProgress(0);
+                }
+            }
+            
+            resetAll() {
+                if (confirm('确定要清除所有数据吗？这将删除所有视频、播放列表和合辑，且无法恢复！')) {
+                    if (confirm('再次确认：这将永久删除所有数据，确定继续吗？')) {
+                        localStorage.removeItem('videos');
+                        localStorage.removeItem('playlists');
+                        localStorage.removeItem('collections');
+                        
+                        this.log('🗑️ 所有数据已清除');
+                        this.updateStatus('所有数据已清除', 'success');
+                        
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1000);
+                    }
+                }
+            }
+        }
+        
+        // 全局变量
+        let fixTool;
+        
+        // 初始化
+        window.onload = function() {
+            fixTool = new VideoFixTool();
+        };
+        
+        // 全局函数
+        function diagnoseAll() {
+            fixTool.diagnoseAll();
+        }
+        
+        function fixAll() {
+            fixTool.fixAll();
+        }
+        
+        function fixUrls() {
+            fixTool.fixVideoUrls().then(() => {
+                fixTool.saveData();
+                fixTool.diagnoseAll();
+            });
+        }
+        
+        function fixPlaylists() {
+            fixTool.fixPlaylistMatching().then(() => {
+                fixTool.saveData();
+                fixTool.diagnoseAll();
+            });
+        }
+        
+        function resetAll() {
+            fixTool.resetAll();
+        }
+    </script>
+</body>
+</html>

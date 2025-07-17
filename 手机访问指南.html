@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📱 手机局域网访问指南</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        
+        h1 {
+            color: #4a5568;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        
+        .step {
+            background: #f7fafc;
+            border-left: 4px solid #4299e1;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .step h3 {
+            color: #2d3748;
+            margin-top: 0;
+            font-size: 1.3em;
+        }
+        
+        .command {
+            background: #1a202c;
+            color: #68d391;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Consolas', monospace;
+            margin: 10px 0;
+            word-break: break-all;
+        }
+        
+        .url {
+            background: #ebf8ff;
+            color: #2b6cb0;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: bold;
+            text-align: center;
+            margin: 10px 0;
+            font-size: 1.2em;
+        }
+        
+        .warning {
+            background: #fef5e7;
+            border: 1px solid #f6ad55;
+            color: #c05621;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        
+        .success {
+            background: #f0fff4;
+            border: 1px solid #68d391;
+            color: #22543d;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        
+        .method {
+            background: #edf2f7;
+            border: 1px solid #cbd5e0;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .method h4 {
+            color: #2d3748;
+            margin-top: 0;
+        }
+        
+        .icon {
+            font-size: 1.5em;
+            margin-right: 10px;
+        }
+        
+        .btn {
+            display: inline-block;
+            background: #4299e1;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 5px;
+            font-weight: bold;
+        }
+        
+        .btn:hover {
+            background: #3182ce;
+        }
+        
+        ul {
+            padding-left: 20px;
+        }
+        
+        li {
+            margin: 8px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📱 手机局域网访问指南</h1>
+        
+        <div class="success">
+            <strong>🎯 目标：</strong> 让手机可以访问电脑上的视频学习应用
+        </div>
+        
+        <div class="step">
+            <h3><span class="icon">🔍</span>步骤1：获取电脑的局域网IP地址</h3>
+            <p>在电脑上按 <strong>Win + R</strong>，输入 <code>cmd</code> 打开命令提示符，然后输入：</p>
+            <div class="command">ipconfig</div>
+            <p>找到类似这样的行：</p>
+            <div class="command">
+以太网适配器 以太网:
+   IPv4 地址 . . . . . . . . . . . . : 192.168.1.100
+   
+或者
+
+无线局域网适配器 WLAN:
+   IPv4 地址 . . . . . . . . . . . . : 192.168.1.100
+            </div>
+            <p><strong>记住这个IP地址</strong>（通常以 192.168 或 10. 开头）</p>
+        </div>
+        
+        <div class="step">
+            <h3><span class="icon">🚀</span>步骤2：启动局域网服务器</h3>
+            
+            <div class="method">
+                <h4>🐍 方法1：使用Python启动服务器</h4>
+                <p>在命令提示符中执行：</p>
+                <div class="command">
+cd "C:\Users\Administrator\Downloads\project-bolt-sb1-raf4VSCODE_2\project\dist"
+python -m http.server 8080 --bind 0.0.0.0
+                </div>
+                <p>看到 "Serving HTTP on 0.0.0.0 port 8080" 表示成功</p>
+            </div>
+            
+            <div class="method">
+                <h4>🟢 方法2：使用Node.js启动服务器</h4>
+                <p>在命令提示符中执行：</p>
+                <div class="command">
+cd "C:\Users\Administrator\Downloads\project-bolt-sb1-raf4VSCODE_2\project\dist"
+npx serve -s . -l 8080 --host 0.0.0.0
+                </div>
+                <p>看到服务器启动信息表示成功</p>
+            </div>
+            
+            <div class="method">
+                <h4>⚡ 方法3：使用批处理文件</h4>
+                <p>直接双击运行以下文件之一：</p>
+                <ul>
+                    <li><code>start-lan-server.bat</code> (Python版本)</li>
+                    <li><code>start-node-lan-server.bat</code> (Node.js版本)</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="step">
+            <h3><span class="icon">📱</span>步骤3：手机访问</h3>
+            <p>确保手机和电脑连接到<strong>同一个WiFi网络</strong>，然后在手机浏览器中输入：</p>
+            <div class="url">http://[你的IP地址]:8080</div>
+            <p><strong>示例：</strong></p>
+            <div class="url">http://192.168.1.100:8080</div>
+            <p>将 <code>192.168.1.100</code> 替换为步骤1中获取的实际IP地址</p>
+        </div>
+        
+        <div class="step">
+            <h3><span class="icon">🔧</span>常见问题解决</h3>
+            
+            <div class="warning">
+                <strong>❗ 如果手机无法访问，请检查：</strong>
+                <ul>
+                    <li>手机和电脑是否在同一WiFi网络</li>
+                    <li>Windows防火墙是否阻止了连接</li>
+                    <li>IP地址是否正确</li>
+                    <li>服务器是否正在运行</li>
+                </ul>
+            </div>
+            
+            <h4>🛡️ 防火墙设置</h4>
+            <p>如果访问被阻止，可能需要在Windows防火墙中添加例外：</p>
+            <ol>
+                <li>打开 "Windows Defender 防火墙"</li>
+                <li>点击 "允许应用或功能通过Windows Defender防火墙"</li>
+                <li>找到 "Python" 或 "Node.js" 并允许专用和公用网络</li>
+            </ol>
+            
+            <h4>🔄 重启服务器</h4>
+            <p>如果遇到问题，按 <code>Ctrl + C</code> 停止服务器，然后重新启动</p>
+        </div>
+        
+        <div class="step">
+            <h3><span class="icon">✅</span>验证访问</h3>
+            <p>成功访问后，您应该能看到视频学习应用的界面。如果是PWA应用，可以：</p>
+            <ul>
+                <li>在iPhone Safari中点击分享按钮，选择"添加到主屏幕"</li>
+                <li>在Android Chrome中点击菜单，选择"添加到主屏幕"</li>
+            </ul>
+        </div>
+        
+        <div class="success">
+            <strong>🎉 完成！</strong> 现在您可以在手机上访问视频学习应用了。记住这个IP地址，下次可以直接访问。
+        </div>
+    </div>
+</body>
+</html>

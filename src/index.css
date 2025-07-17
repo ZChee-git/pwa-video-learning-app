@@ -1,0 +1,39 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* iOS Safari全屏样式优化 */
+.video-player-fullscreen {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  max-width: 100vw !important;
+  max-height: 100vh !important;
+  min-height: 100vh !important;
+  z-index: 9999 !important;
+  background: white !important;
+}
+
+.video-player-fullscreen video {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: contain !important;
+}
+
+/* 确保全屏时移除默认的margin和padding */
+.video-player-fullscreen * {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* iOS Safari特定优化 */
+@supports (-webkit-appearance: none) {
+  .video-player-fullscreen {
+    -webkit-transform: translate3d(0, 0, 0) !important;
+    transform: translate3d(0, 0, 0) !important;
+  }
+}
