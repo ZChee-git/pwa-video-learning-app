@@ -37,6 +37,8 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const [castSupported, setCastSupported] = useState(false);
   const [castError, setCastError] = useState<string>('');
   const [userInteracted, setUserInteracted] = useState(false); // 追踪用户是否已交互
+  const [showControls, setShowControls] = useState(true); // 控制栏显示状态
+  const [controlsTimeout, setControlsTimeout] = useState<NodeJS.Timeout | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const currentItem = playlist[currentIndex];
@@ -66,6 +68,82 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
       document.removeEventListener('click', handleUserInteraction);
     };
   }, []);
+
+  // 控制栏自动隐藏逻辑
+  useEffect(() => {
+    if (!isPlaying || showPlaylist || showCastMenu) {
+      setShowControls(true);
+      if (controlsTimeout) {
+        clearTimeout(controlsTimeout);
+        setControlsTimeout(null);
+      }
+      return;
+    }
+
+    const resetHideTimeout = () => {
+      if (controlsTimeout) {
+        clearTimeout(controlsTimeout);
+      }
+      setShowControls(true);
+      const timeout = setTimeout(() => {
+        setShowControls(false);
+      }, 3000);
+      setControlsTimeout(timeout);
+    };
+
+    resetHideTimeout();
+
+    return () => {
+      if (controlsTimeout) {
+        clearTimeout(controlsTimeout);
+      }
+    };
+  }, [isPlaying, showPlaylist, showCastMenu, controlsTimeout]);
+
+  // 鼠标移动时显示控制栏
+  const handleMouseMove = () => {
+    if (isPlaying && !showPlaylist && !showCastMenu) {
+      setShowControls(true);
+      if (controlsTimeout) {
+        clearTimeout(controlsTimeout);
+      }
+      const timeout = setTimeout(() => {
+        setShowControls(false);
+      }, 3000);
+      setControlsTimeout(timeout);
+    }
+  };
+
+  // 视频容器点击时切换控制栏显示
+  const handleVideoClick = () => {
+    // 防止在播放列表或投屏菜单打开时触发
+    if (showPlaylist || showCastMenu) return;
+    
+    // 切换播放状态
+    togglePlay();
+    
+    // 如果是播放状态，切换控制栏显示
+    if (isPlaying) {
+      setShowControls(!showControls);
+      if (controlsTimeout) {
+        clearTimeout(controlsTimeout);
+        setControlsTimeout(null);
+      }
+      if (!showControls) {
+        const timeout = setTimeout(() => {
+          setShowControls(false);
+        }, 3000);
+        setControlsTimeout(timeout);
+      }
+    } else {
+      // 暂停时始终显示控制栏
+      setShowControls(true);
+      if (controlsTimeout) {
+        clearTimeout(controlsTimeout);
+        setControlsTimeout(null);
+      }
+    }
+  };
 
   useEffect(() => {
     if (videoRef.current && currentVideo) {
@@ -568,7 +646,9 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     <div className="fixed inset-0 bg-black bg-opacity-95 flex items-center justify-center z-50">
       <div className="bg-black rounded-lg overflow-hidden shadow-2xl w-full h-full md:max-w-6xl md:w-full md:mx-4 md:max-h-[90vh] md:h-auto">
         {/* Header */}
-        <div className="bg-gray-900 px-4 md:px-6 py-3 md:py-4 flex justify-between items-center">
+        <div className={`bg-gray-900 px-4 md:px-6 py-3 md:py-4 flex justify-between items-center transition-all duration-300 ${
+          showControls ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-full pointer-events-none'
+        }`}>
           <div className="flex items-center space-x-2 md:space-x-4 flex-1 min-w-0">
             <button
               onClick={handleClose}
@@ -668,7 +748,10 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
           </div>
         )}
         
-        <div className="relative flex-1">
+        <div className="relative flex-1" 
+             onMouseMove={handleMouseMove}
+             onMouseLeave={() => setShowControls(false)}
+             onClick={handleVideoClick}>
           {/* Video/Audio Display */}
           {videoError ? (
             <div className="w-full h-full md:aspect-video bg-gray-800 flex items-center justify-center">
@@ -735,7 +818,6 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
                 onPause={() => setIsPlaying(false)}
                 onEnded={handleVideoEnded}
                 onTimeUpdate={handleTimeUpdate}
-                onClick={togglePlay}
                 playsInline={true}
                 preload={isIOS && isSafari ? 'auto' : 'metadata'}
                 controls={false}
@@ -747,7 +829,10 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
           
           {/* Controls Overlay */}
           {!videoError && (
-            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3 md:p-4">
+            <div className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3 md:p-4 transition-all duration-300 ${
+              showControls ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-full pointer-events-none'
+            }`}
+            onClick={(e) => e.stopPropagation()}>
               {/* Progress Bar */}
               <div className="mb-3 md:mb-4">
                 <input
@@ -963,25 +1048,27 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         )}
       </div>
       
-      <style jsx>{`
-        .slider::-webkit-slider-thumb {
-          appearance: none;
-          height: 16px;
-          width: 16px;
-          border-radius: 50%;
-          background: #3b82f6;
-          cursor: pointer;
-        }
-        
-        .slider::-moz-range-thumb {
-          height: 16px;
-          width: 16px;
-          border-radius: 50%;
-          background: #3b82f6;
-          cursor: pointer;
-          border: none;
-        }
-      `}</style>
+      <style dangerouslySetInnerHTML={{
+        __html: `
+          .slider::-webkit-slider-thumb {
+            appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #3b82f6;
+            cursor: pointer;
+          }
+          
+          .slider::-moz-range-thumb {
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #3b82f6;
+            cursor: pointer;
+            border: none;
+          }
+        `
+      }} />
     </div>
   );
 };
