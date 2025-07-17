@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Brain, Play, RotateCcw, History, BookOpen, Plus, Loader, Headphones, Video, LogOut } from 'lucide-react';
+import { Brain, Play, RotateCcw, History, BookOpen, Plus, Loader, Headphones, Video, User } from 'lucide-react';
 import { usePlaylistManager } from './hooks/usePlaylistManager';
 import { VideoUpload } from './components/VideoUpload';
 import { StatsCard } from './components/StatsCard';
@@ -10,6 +10,7 @@ import { VideoPlayer } from './components/VideoPlayer';
 import { InstallPrompt } from './components/InstallPrompt';
 import { CollectionManager } from './components/CollectionManager';
 import { AuthGuard } from './components/AuthGuard';
+import { AccountManager } from './components/AccountManager';
 
 function App() {
   const {
@@ -38,6 +39,7 @@ function App() {
   const [currentPreview, setCurrentPreview] = useState(generateTodayPlaylist());
   const [currentPlaylist, setCurrentPlaylist] = useState<any>(null);
   const [previewType, setPreviewType] = useState<'new' | 'audio' | 'video'>('new');
+  const [showAccountManager, setShowAccountManager] = useState(false);
 
   // 注销功能
   const handleLogout = () => {
@@ -47,22 +49,6 @@ function App() {
       localStorage.removeItem('app_auth_code');
       window.location.reload();
     }
-  };
-
-  // 获取认证状态信息
-  const getAuthInfo = () => {
-    const authExpiry = localStorage.getItem('app_auth_expiry');
-    const authCode = localStorage.getItem('app_auth_code');
-    
-    if (authExpiry === 'unlimited') {
-      return '无限制使用';
-    } else if (authExpiry) {
-      const expiryDate = new Date(authExpiry);
-      const now = new Date();
-      const daysLeft = Math.ceil((expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-      return `剩余 ${daysLeft} 天`;
-    }
-    return '未知状态';
   };
 
   useEffect(() => {
@@ -170,18 +156,14 @@ function App() {
               智能播放系统
             </h1>
             
-            {/* 认证状态和注销按钮 */}
-            <div className="absolute right-0 top-0 flex items-center space-x-4">
-              <div className="text-sm text-gray-600 bg-gray-100 px-3 py-1 rounded-lg">
-                {getAuthInfo()}
-              </div>
+            {/* 账户管理按钮 */}
+            <div className="absolute right-0 top-0">
               <button
-                onClick={handleLogout}
-                className="flex items-center space-x-2 text-red-600 hover:text-red-700 hover:bg-red-50 px-3 py-1 rounded-lg transition-colors"
-                title="注销"
+                onClick={() => setShowAccountManager(true)}
+                className="w-10 h-10 bg-blue-600 hover:bg-blue-700 text-white rounded-full flex items-center justify-center transition-colors shadow-lg hover:shadow-xl"
+                title="账户管理"
               >
-                <LogOut size={16} />
-                <span className="text-sm">注销</span>
+                <User size={20} />
               </button>
             </div>
           </div>
@@ -373,6 +355,13 @@ function App() {
 
       {/* Install Prompt */}
       <InstallPrompt />
+
+      {/* Account Manager */}
+      <AccountManager
+        isOpen={showAccountManager}
+        onClose={() => setShowAccountManager(false)}
+        onLogout={handleLogout}
+      />
       </div>
     </AuthGuard>
   );
