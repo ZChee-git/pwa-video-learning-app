@@ -53,8 +53,8 @@ export const VideoPersistenceManager = {
   // 存储视频文件到IndexedDB
   async storeVideoFile(videoId, file) {
     return new Promise((resolve, reject) => {
-      const dbName = 'SmartReviewDB';
-      const dbVersion = 1;
+      const dbName = 'VideoLearningApp';  // 使用统一的数据库名称
+      const dbVersion = 2;  // 升级版本以支持两种存储格式
       
       const request = indexedDB.open(dbName, dbVersion);
       
@@ -88,6 +88,15 @@ export const VideoPersistenceManager = {
       
       request.onupgradeneeded = (event) => {
         const db = event.target.result;
+        
+        // 创建 files 存储（如果不存在）
+        if (!db.objectStoreNames.contains('files')) {
+          const filesStore = db.createObjectStore('files', { keyPath: 'id' });
+          filesStore.createIndex('name', 'name', { unique: false });
+          filesStore.createIndex('timestamp', 'timestamp', { unique: false });
+        }
+        
+        // 创建 videoFiles 存储（如果不存在）
         if (!db.objectStoreNames.contains('videoFiles')) {
           const store = db.createObjectStore('videoFiles', { keyPath: 'id' });
           store.createIndex('fileName', 'fileName', { unique: false });
@@ -100,28 +109,79 @@ export const VideoPersistenceManager = {
   // 从IndexedDB获取视频文件
   async getVideoFile(videoId) {
     return new Promise((resolve, reject) => {
-      const dbName = 'SmartReviewDB';
-      const request = indexedDB.open(dbName, 1);
+      const dbName = 'VideoLearningApp';  // 使用统一的数据库名称
+      const request = indexedDB.open(dbName, 2);
       
       request.onerror = () => reject(request.error);
       
       request.onsuccess = () => {
         const db = request.result;
-        const transaction = db.transaction(['videoFiles'], 'readonly');
-        const store = transaction.objectStore('videoFiles');
-        const getRequest = store.get(videoId);
         
-        getRequest.onsuccess = () => {
-          if (getRequest.result) {
-            console.log(`Video file retrieved from IndexedDB: ${videoId}`);
-            resolve(getRequest.result);
-          } else {
-            console.warn(`Video file not found in IndexedDB: ${videoId}`);
-            resolve(null);
-          }
-        };
-        
-        getRequest.onerror = () => reject(getRequest.error);
+        // 首先尝试从 videoFiles 存储获取
+        if (db.objectStoreNames.contains('videoFiles')) {
+          const transaction = db.transaction(['videoFiles'], 'readonly');
+          const store = transaction.objectStore('videoFiles');
+          const getRequest = store.get(videoId);
+          
+          getRequest.onsuccess = () => {
+            if (getRequest.result) {
+              console.log(`Video file retrieved from videoFiles: ${videoId}`);
+              resolve(getRequest.result);
+            } else {
+              // 如果在 videoFiles 中找不到，尝试从 files 存储获取
+              this.getFromFilesStore(db, videoId).then(resolve).catch(reject);
+            }
+          };
+          
+          getRequest.onerror = () => {
+            // 如果 videoFiles 存储访问失败，尝试 files 存储
+            this.getFromFilesStore(db, videoId).then(resolve).catch(reject);
+          };
+        } else {
+          // 如果 videoFiles 存储不存在，尝试 files 存储
+          this.getFromFilesStore(db, videoId).then(resolve).catch(reject);
+        }
+      };
+    });
+  },
+  
+  // 从 files 存储获取数据的辅助方法
+  getFromFilesStore(db, videoId) {
+    return new Promise((resolve, reject) => {
+      if (!db.objectStoreNames.contains('files')) {
+        console.warn(`Video file not found in any store: ${videoId}`);
+        resolve(null);
+        return;
+      }
+      
+      const transaction = db.transaction(['files'], 'readonly');
+      const store = transaction.objectStore('files');
+      const getRequest = store.get(videoId);
+      
+      getRequest.onsuccess = () => {
+        if (getRequest.result) {
+          console.log(`Video file retrieved from files: ${videoId}`);
+          // 转换数据格式以匹配 videoFiles 格式
+          const fileData = getRequest.result;
+          const videoData = {
+            id: fileData.id,
+            file: new File([fileData.data], fileData.name, { type: fileData.type }),
+            fileName: fileData.name,
+            fileSize: fileData.size,
+            fileType: fileData.type,
+            lastModified: fileData.timestamp,
+            storedAt: fileData.timestamp
+          };
+          resolve(videoData);
+        } else {
+          console.warn(`Video file not found in files store: ${videoId}`);
+          resolve(null);
+        }
+      };
+      
+      getRequest.onerror = () => {
+        console.error(`Error retrieving from files store: ${videoId}`, getRequest.error);
+        reject(getRequest.error);
       };
     });
   },
