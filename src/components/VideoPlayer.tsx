@@ -371,8 +371,6 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
           onClick={handleVideoClick}
           onTimeUpdate={handleTimeUpdate}
           onEnded={handleVideoEnded}
-          onLoadStart={() => setIsLoading(true)}
-          onCanPlay={() => setIsLoading(false)}
           onPause={() => setIsPlaying(false)}
           onPlay={() => setIsPlaying(true)}
           playsInline
