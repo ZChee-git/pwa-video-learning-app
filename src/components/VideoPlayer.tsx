@@ -336,7 +336,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black flex items-center justify-center z-50">
-      {/* 视频播放器 - 直接全屏显示，无菜单栏 - 更新测试20250718 */}
+      {/* 视频播放器 - 直接全屏显示，无菜单栏 - Netlify部署测试20250718 */}
       <div className="relative w-full h-full">
         {/* 加载指示器 */}
         {isLoading && (
