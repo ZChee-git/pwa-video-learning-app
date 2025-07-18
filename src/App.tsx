@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Brain, Play, RotateCcw, History, BookOpen, Plus, Loader, Headphones, Video } from 'lucide-react';
+import { Brain, Play, RotateCcw, History, BookOpen, Plus, Loader, Headphones, Video, User } from 'lucide-react';
 import { usePlaylistManager } from './hooks/usePlaylistManager';
 import { VideoUpload } from './components/VideoUpload';
 import { StatsCard } from './components/StatsCard';
@@ -101,16 +101,6 @@ function App() {
     handleShowPreview('new', stats.canAddExtra);
   };
 
-  const handleContinueLastPlaylist = () => {
-    const lastPlaylist = getLastPlaylist();
-    if (lastPlaylist) {
-      setCurrentPlaylist(lastPlaylist);
-      setShowPlayer(true);
-    } else {
-      alert('没有未完成的播放列表');
-    }
-  };
-
   const handlePlayerClose = () => {
     setShowPlayer(false);
     setCurrentPlaylist(null);
@@ -157,15 +147,23 @@ function App() {
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="text-center mb-12">
-          <div className="flex items-center justify-center mb-4">
-            <Brain className="text-blue-600 mr-4" size={48} />
-            <h1 className="text-4xl font-bold text-gray-800">
-              艾宾浩斯视频学习系统
-            </h1>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex-1"></div>
+            <div className="flex items-center justify-center">
+              <Brain className="text-blue-600 mr-4" size={48} />
+              <h1 className="text-4xl font-bold text-gray-800">
+                艾宾浩斯视频学习系统
+              </h1>
+            </div>
+            <div className="flex-1 flex justify-end">
+              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                <User className="text-blue-600" size={24} />
+              </div>
+            </div>
           </div>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
             基于科学的间隔重复算法，在第3、7、15、30天进行复习，帮助您高效掌握视频内容。
-            每日新学4集，支持音频和视频复习模式。
+            每日新学4集，支持音频和视频复习模式。支持PWA离线使用，随时随地学习。
           </p>
         </div>
 
@@ -237,17 +235,6 @@ function App() {
               <span className="text-sm text-purple-100 mt-2">
                 {videoReviews.length} 个视频建议观看
               </span>
-            </button>
-          </div>
-
-          {/* 继续上次播放 */}
-          <div className="mt-6 text-center">
-            <button
-              onClick={handleContinueLastPlaylist}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium flex items-center mx-auto transition-colors"
-            >
-              <RotateCcw size={20} className="mr-2" />
-              继续上次的播放列表
             </button>
           </div>
 
