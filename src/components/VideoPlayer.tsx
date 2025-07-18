@@ -142,6 +142,14 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   // 视频加载和播放效果
   useEffect(() => {
     if (videoRef.current && currentVideo) {
+      console.log('Loading video:', {
+        videoId: currentVideo.id,
+        videoName: currentVideo.name,
+        videoUrl: currentVideo.fileUrl,
+        urlType: typeof currentVideo.fileUrl,
+        urlLength: currentVideo.fileUrl?.length
+      });
+      
       setVideoError(false);
       setIsLoading(true);
       setRetryCount(0);
@@ -190,6 +198,13 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
       const handleError = async (e: any) => {
         console.error('Video error:', e);
+        console.error('Video error details:', {
+          error: e.target?.error,
+          currentSrc: e.target?.currentSrc,
+          networkState: e.target?.networkState,
+          readyState: e.target?.readyState,
+          videoUrl: currentVideo?.fileUrl
+        });
         
         if (validateAndFixVideoUrl && currentVideo && retryCount < 3) {
           console.log('Attempting to fix video URL for:', currentVideo.id);
