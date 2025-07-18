@@ -155,9 +155,9 @@ function App() {
                 艾宾浩斯视频学习系统
               </h1>
             </div>
-            <div className="flex-1 flex justify-end">
-              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                <User className="text-blue-600" size={24} />
+            <div className="flex-1 flex justify-end pr-4 pt-4">
+              <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
+                <User className="text-blue-600" size={12} />
               </div>
             </div>
           </div>
